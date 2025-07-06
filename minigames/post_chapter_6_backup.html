@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Dodging Game with Pixel Cat & Bubbles</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    canvas {
+      display: block;
+      border: 2px solid #fff;
+      max-width: 100vw;
+      max-height: 100vh;
+      object-fit: contain;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="gameCanvas" width="512" height="768"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const backgroundImage = new Image();
+    backgroundImage.src = '../images/background.png';
+
+    const playerImage = new Image();
+    playerImage.src = '../images/A_pixel_art_depiction_of_an_orange_tabby_cat_is_se.png';
+
+    const obstacleImage = new Image();
+    obstacleImage.src = '../images/monster_sprite_transparent.png';
+
+    const bubbleImage = new Image();
+    bubbleImage.src = '../images/bubble_sprite.png'; // Make sure the bubble sprite is in the correct path
+
+    const rows = 6;
+    const cols = 10;
+    const cellWidth = canvas.width / cols;
+    const cellHeight = canvas.height / rows;
+
+    let lastPlayerDirection = 'left';
+
+    const player = {
+      x: Math.floor(cols / 2),
+      y: rows - 1,
+      size: cellWidth * 0.8,
+      image: playerImage
+    };
+
+    const obstacles = [];
+    const obstacleSpeed = 2;
+
+    for (let i = 1; i < rows - 1; i++) {
+      const rowObstacles = [];
+      const direction = i % 2 === 0 ? 1 : -1;
+      const count = Math.floor(Math.random() * 3) + 2;
+
+      for (let j = 0; j < count; j++) {
+        rowObstacles.push({
+          x: Math.random() * canvas.width,
+          y: i * cellHeight + cellHeight / 4,
+          width: cellWidth * 0.8,
+          height: cellHeight / 2,
+          speed: direction * obstacleSpeed
+        });
+      }
+
+      obstacles.push(rowObstacles);
+    }
+
+    const bubbles = [];
+    const totalBubbles = 10;
+    let collectedBubbles = 0;
+
+    for (let i = 0; i < totalBubbles; i++) {
+      const bubble = {
+        x: Math.floor(Math.random() * cols),
+        y: Math.floor(Math.random() * (rows - 2)) + 1,
+        size: cellWidth * 0.5,
+        collected: false
+      };
+      bubbles.push(bubble);
+    }
+
+    function drawPlayer() {
+      const px = player.x * cellWidth + cellWidth / 2 - player.size / 2;
+      const py = player.y * cellHeight + cellHeight / 2 - player.size / 2;
+      ctx.save();
+      if (lastPlayerDirection === 'right') {
+        ctx.translate(px + player.size, py);
+        ctx.scale(-1, 1);
+        ctx.drawImage(player.image, 0, 0, player.size, player.size);
+      } else {
+        ctx.translate(px, py);
+        ctx.drawImage(player.image, 0, 0, player.size, player.size);
+      }
+      ctx.restore();
+    }
+
+    function drawObstacles() {
+      for (let row of obstacles) {
+        for (let obs of row) {
+          ctx.save();
+          if (obs.speed > 0) {
+            ctx.translate(obs.x + obs.width, obs.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(obstacleImage, 0, 0, obs.width, obs.height);
+          } else {
+            ctx.translate(obs.x, obs.y);
+            ctx.drawImage(obstacleImage, 0, 0, obs.width, obs.height);
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    function drawBubbles() {
+      for (let bubble of bubbles) {
+        if (!bubble.collected) {
+          const bx = bubble.x * cellWidth + cellWidth / 2 - bubble.size / 2;
+          const by = bubble.y * cellHeight + cellHeight / 2 - bubble.size / 2;
+          ctx.drawImage(bubbleImage, bx, by, bubble.size, bubble.size);
+        }
+      }
+    }
+
+    function moveObstacles() {
+      for (let row of obstacles) {
+        for (let obs of row) {
+          obs.x += obs.speed;
+          if (obs.x < -obs.width) obs.x = canvas.width;
+          if (obs.x > canvas.width) obs.x = -obs.width;
+        }
+      }
+    }
+
+    function checkCollision() {
+      const px = player.x * cellWidth + cellWidth / 2 - player.size / 2;
+      const py = player.y * cellHeight + cellHeight / 2 - player.size / 2;
+
+      for (let bubble of bubbles) {
+        if (!bubble.collected && player.x === bubble.x && player.y === bubble.y) {
+          bubble.collected = true;
+          collectedBubbles++;
+        }
+      }
+
+      if (player.y === 0 && collectedBubbles === totalBubbles) {
+        // Send completion message to parent
+        parent.postMessage({
+          type: 'game_completed',
+          data: {
+            success: true,
+            score: collectedBubbles * 100,
+            completionTime: Date.now(),
+            message: "All bubbles collected!"
+          }
+        }, '*');
+        // Still show alert for standalone mode
+        resetGame();
+      }
+
+      const rowIndex = player.y - 1;
+      if (rowIndex >= 0 && rowIndex < obstacles.length) {
+        for (let obs of obstacles[rowIndex]) {
+          if (
+            px < obs.x + obs.width &&
+            px + player.size > obs.x &&
+            py < obs.y + obs.height &&
+            py + player.size > obs.y
+          ) {
+            // Send failure message to parent
+            parent.postMessage({
+              type: 'game_failed',
+              data: {
+                success: false,
+                reason: 'hit_by_obstacle',
+                message: "Hit by dust monster!"
+              }
+            }, '*');
+            // Still show alert for standalone mode
+            resetGame();
+          }
+        }
+      }
+    }
+
+    function resetGame() {
+      player.x = Math.floor(cols / 2);
+      player.y = rows - 1;
+      lastPlayerDirection = 'left';
+      collectedBubbles = 0;
+      for (let bubble of bubbles) {
+        bubble.collected = false;
+        bubble.x = Math.floor(Math.random() * cols);
+        bubble.y = Math.floor(Math.random() * (rows - 2)) + 1;
+      }
+    }
+
+    function drawBackground() {
+      ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+    }
+
+    // Frame rate limiting for consistent gameplay
+    let lastTime = 0;
+    const targetFPS = 60;
+    const frameTime = 1000 / targetFPS;
+
+    function gameLoop(currentTime) {
+      if (currentTime - lastTime >= frameTime) {
+        drawBackground();
+        moveObstacles();
+        drawObstacles();
+        drawBubbles();
+        drawPlayer();
+        checkCollision();
+        lastTime = currentTime;
+      }
+      requestAnimationFrame(gameLoop);
+    }
+
+    let imagesLoaded = 0;
+    const totalImages = 4;
+
+    function tryStartGame() {
+      imagesLoaded++;
+      if (imagesLoaded === totalImages) {
+        gameLoop();
+      }
+    }
+
+    backgroundImage.onload = tryStartGame;
+    playerImage.onload = tryStartGame;
+    obstacleImage.onload = tryStartGame;
+    bubbleImage.onload = tryStartGame;
+
+    // Input handling function
+    function handleInput(inputKey) {
+      if ((inputKey === 'w') && player.y > 0) player.y--;
+      if ((inputKey === 's') && player.y < rows - 1) player.y++;
+      if ((inputKey === 'a') && player.x > 0) {
+        player.x--;
+        lastPlayerDirection = 'left';
+      }
+      if ((inputKey === 'd') && player.x < cols - 1) {
+        player.x++;
+        lastPlayerDirection = 'right';
+      }
+    }
+
+    // Listen for input from parent frame (MQTT commands)
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'initialize') {
+        console.log('🎮 Minigame initialized with data:', event.data.gameData);
+        // Send start confirmation
+        parent.postMessage({
+          type: 'game_event',
+          event: 'started',
+          data: { message: 'Post Chapter 6 challenge started' }
+        }, '*');
+      }
+
+      if (event.data.type === 'game_input') {
+        handleInput(event.data.input);
+      }
+    });
+
+    // Also handle direct keyboard input for standalone mode
+    document.addEventListener('keydown', e => {
+      if ((e.key === 'ArrowUp' || e.key === 'w') && player.y > 0) player.y--;
+      if ((e.key === 'ArrowDown' || e.key === 's') && player.y < rows - 1) player.y++;
+      if ((e.key === 'ArrowLeft' || e.key === 'a') && player.x > 0) {
+        player.x--;
+        lastPlayerDirection = 'left';
+      }
+      if ((e.key === 'ArrowRight' || e.key === 'd') && player.x < cols - 1) {
+        player.x++;
+        lastPlayerDirection = 'right';
+      }
+    });
+  </script>
+</body>
+
+</html>

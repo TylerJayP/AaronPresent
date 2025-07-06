@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT Connection Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #00ff00;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #00ff00;
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+
+        .log {
+            background-color: rgba(0, 255, 0, 0.05);
+            border: 1px solid #444;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+
+        button {
+            background-color: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+
+        input,
+        textarea {
+            background-color: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px;
+            margin: 5px;
+        }
+
+        .error {
+            color: #ff4444;
+        }
+
+        .success {
+            color: #44ff44;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>MQTT Connection Test</h1>
+
+        <div class="status" id="status">
+            Status: Initializing...
+        </div>
+
+        <div>
+            <h3>Broker Configuration</h3>
+            <div>Broker: broker.emqx.io</div>
+            <div>WebSocket Port: 8083</div>
+            <div>URL: ws://broker.emqx.io:8083</div>
+        </div>
+
+        <div>
+            <h3>Actions</h3>
+            <button onclick="testConnection()">Test Connection</button>
+            <button onclick="disconnect()">Disconnect</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div>
+            <h3>Send Test Message</h3>
+            <input type="text" id="topic" placeholder="Topic" value="catstory/presenter/to/orchestrator">
+            <br>
+            <textarea id="message" placeholder="Message"
+                rows="3">{"type":"test_message","timestamp":"2024-01-01T12:00:00Z"}</textarea>
+            <br>
+            <button onclick="sendMessage()">Send Message</button>
+        </div>
+
+        <div>
+            <h3>Log</h3>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <!-- Load MQTT.js with fallback sources -->
+    <script>
+        // Function to load MQTT.js with fallbacks
+        function loadMQTTLibrary() {
+            const sources = [
+                'https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js',
+                'https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js'
+            ];
+
+            let sourceIndex = 0;
+
+            function tryLoadSource() {
+                if (sourceIndex >= sources.length) {
+                    log('❌ All MQTT.js sources failed to load', true);
+                    updateStatus('MQTT.js library failed to load from all sources', true);
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = sources[sourceIndex];
+
+                script.onload = function () {
+                    log(`✅ MQTT.js loaded successfully from: ${sources[sourceIndex]}`);
+                    updateStatus('MQTT.js library loaded successfully');
+
+                    // Check if mqtt is available
+                    if (typeof mqtt !== 'undefined') {
+                        log('✅ MQTT.js is available and ready to use');
+                    } else {
+                        log('❌ MQTT.js loaded but mqtt object not available', true);
+                    }
+                };
+
+                script.onerror = function () {
+                    log(`❌ Failed to load from: ${sources[sourceIndex]}`, true);
+                    sourceIndex++;
+                    tryLoadSource();
+                };
+
+                document.head.appendChild(script);
+                log(`Attempting to load MQTT.js from: ${sources[sourceIndex]}`);
+            }
+
+            tryLoadSource();
+        }
+
+        // Start loading when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadMQTTLibrary);
+        } else {
+            loadMQTTLibrary();
+        }
+    </script>
+
+    <script>
+        let client = null;
+        let connected = false;
+
+        function log(message, isError = false) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `Status: ${message}`;
+            statusDiv.className = isError ? 'status error' : 'status success';
+        }
+
+        function testConnection() {
+            log('Starting connection test...');
+
+            if (typeof mqtt === 'undefined') {
+                log('MQTT.js library not loaded!', true);
+                updateStatus('Error: MQTT.js not loaded', true);
+                return;
+            }
+
+            // Use the exact same URL format that works in the simple test
+            const brokerUrl = 'ws://broker.emqx.io:8083/mqtt';  // Added /mqtt path
+            const clientId = `TestClient_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            log(`Connecting to: ${brokerUrl}`);
+            log(`Client ID: ${clientId}`);
+
+            const options = {
+                clientId: clientId,
+                keepalive: 30,
+                clean: true,
+                connectTimeout: 15000,
+                reconnectPeriod: 0,
+                rejectUnauthorized: false,
+                protocolVersion: 4
+            };
+
+            log('Connection options: ' + JSON.stringify(options, null, 2));
+
+            try {
+                client = mqtt.connect(brokerUrl, options);
+
+                client.on('connect', () => {
+                    connected = true;
+                    log('✅ Connected successfully!');
+                    updateStatus('Connected', false);
+
+                    // Subscribe to test topic
+                    const subscribeTopic = 'catstory/orchestrator/to/presenter';
+                    client.subscribe(subscribeTopic, (err) => {
+                        if (err) {
+                            log(`❌ Failed to subscribe to ${subscribeTopic}: ${err.message}`, true);
+                        } else {
+                            log(`✅ Successfully subscribed to ${subscribeTopic}`);
+                        }
+                    });
+                });
+
+                client.on('error', (error) => {
+                    log(`❌ Connection error: ${error.message}`, true);
+                    updateStatus(`Error: ${error.message}`, true);
+                    connected = false;
+                });
+
+                client.on('close', () => {
+                    log('Connection closed');
+                    updateStatus('Disconnected', true);
+                    connected = false;
+                });
+
+                client.on('offline', () => {
+                    log('Client offline');
+                    updateStatus('Offline', true);
+                    connected = false;
+                });
+
+                client.on('message', (topic, message) => {
+                    log(`📨 Received message on ${topic}: ${message.toString()}`);
+                });
+
+                // Set a timeout to check connection status
+                setTimeout(() => {
+                    if (!connected) {
+                        log('❌ Connection timeout - failed to connect within 15 seconds', true);
+                        updateStatus('Connection timeout', true);
+                    }
+                }, 15000);
+
+            } catch (error) {
+                log(`❌ Exception during connection: ${error.message}`, true);
+                updateStatus(`Exception: ${error.message}`, true);
+            }
+        }
+
+        function disconnect() {
+            if (client && connected) {
+                client.end();
+                log('Disconnected');
+                updateStatus('Disconnected');
+            } else {
+                log('Not connected');
+            }
+        }
+
+        function sendMessage() {
+            if (!client || !connected) {
+                log('❌ Not connected - cannot send message', true);
+                return;
+            }
+
+            const topic = document.getElementById('topic').value;
+            const message = document.getElementById('message').value;
+
+            if (!topic || !message) {
+                log('❌ Please provide both topic and message', true);
+                return;
+            }
+
+            client.publish(topic, message, (err) => {
+                if (err) {
+                    log(`❌ Failed to send message: ${err.message}`, true);
+                } else {
+                    log(`✅ Message sent to ${topic}: ${message}`);
+                }
+            });
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Test connection on page load
+        log('MQTT Test Page Loaded');
+
+        // Wait for MQTT.js to be available before proceeding
+        function waitForMQTT() {
+            if (typeof mqtt !== 'undefined') {
+                log('✅ MQTT.js is ready for testing');
+                log(`MQTT.js version info: ${typeof mqtt}`);
+                updateStatus('Ready - MQTT.js loaded successfully');
+            } else {
+                log('⏳ Waiting for MQTT.js to load...');
+                updateStatus('Loading MQTT.js library...');
+                setTimeout(waitForMQTT, 500); // Check again in 500ms
+            }
+        }
+
+        // Start checking for MQTT availability
+        setTimeout(waitForMQTT, 100);
+    </script>
+</body>
+
+</html>

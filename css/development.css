@@ -1,0 +1,423 @@
+/* Development Mode Styling */
+/* Only loaded when DEVELOPMENT_MODE is enabled */
+
+.dev-controls {
+    background: #000044;
+    border: 2px solid #0088ff;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+    box-shadow: 0 0 15px rgba(0, 136, 255, 0.3);
+}
+
+.dev-controls.hidden {
+    display: none;
+}
+
+.dev-header {
+    color: #0088ff;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 1px solid #0066cc;
+    padding-bottom: 10px;
+}
+
+.dev-section {
+    margin-bottom: 15px;
+}
+
+.dev-section-title {
+    color: #00aaff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.dev-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.dev-btn {
+    background: #001122;
+    border: 1px solid #0088ff;
+    color: #0088ff;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.dev-btn:hover {
+    background: #002244;
+    color: #00aaff;
+    border-color: #00aaff;
+    box-shadow: 0 0 8px rgba(0, 170, 255, 0.3);
+}
+
+.dev-btn:active {
+    background: #003366;
+    transform: translateY(1px);
+}
+
+.dev-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #111111;
+    border-color: #333333;
+    color: #666666;
+}
+
+.dev-btn.danger {
+    border-color: #ff4444;
+    color: #ff4444;
+}
+
+.dev-btn.danger:hover {
+    background: #220000;
+    border-color: #ff6666;
+    color: #ff6666;
+}
+
+.dev-btn.success {
+    border-color: #44ff44;
+    color: #44ff44;
+}
+
+.dev-btn.success:hover {
+    background: #002200;
+    border-color: #66ff66;
+    color: #66ff66;
+}
+
+/* MQTT Message Simulator */
+.mqtt-simulator {
+    background: #002200;
+    border: 1px solid #00aa00;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 3px;
+}
+
+.mqtt-simulator-title {
+    color: #00aa00;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.mqtt-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mqtt-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mqtt-label {
+    color: #00dd00;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.mqtt-input,
+.mqtt-select {
+    background: #001100;
+    border: 1px solid #004400;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 6px;
+    border-radius: 2px;
+}
+
+.mqtt-input:focus,
+.mqtt-select:focus {
+    outline: none;
+    border-color: #00aa00;
+    box-shadow: 0 0 5px rgba(0, 170, 0, 0.3);
+}
+
+.mqtt-textarea {
+    background: #001100;
+    border: 1px solid #004400;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 6px;
+    border-radius: 2px;
+    min-height: 60px;
+    resize: vertical;
+}
+
+.mqtt-send-btn {
+    background: #002200;
+    border: 1px solid #00aa00;
+    color: #00aa00;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    margin-top: 5px;
+}
+
+.mqtt-send-btn:hover {
+    background: #004400;
+    border-color: #00dd00;
+    color: #00dd00;
+}
+
+/* Debug Console */
+.debug-console {
+    background: #110000;
+    border: 1px solid #444444;
+    padding: 10px;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 3px;
+}
+
+.debug-console-title {
+    color: #888888;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.debug-clear-btn {
+    background: #220000;
+    border: 1px solid #666666;
+    color: #666666;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    cursor: pointer;
+}
+
+.debug-clear-btn:hover {
+    border-color: #888888;
+    color: #888888;
+}
+
+.debug-messages {
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+.debug-message {
+    margin-bottom: 3px;
+    padding: 2px 0;
+    border-bottom: 1px solid #222222;
+}
+
+.debug-message.mqtt {
+    color: #0088ff;
+}
+
+.debug-message.story {
+    color: #00aa00;
+}
+
+.debug-message.audio {
+    color: #ff8800;
+}
+
+.debug-message.minigame {
+    color: #aa00aa;
+}
+
+.debug-message.error {
+    color: #ff4444;
+}
+
+.debug-message.system {
+    color: #888888;
+}
+
+.debug-timestamp {
+    color: #666666;
+    font-size: 9px;
+}
+
+/* State Inspector */
+.state-inspector {
+    background: #220022;
+    border: 1px solid #aa00aa;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 3px;
+}
+
+.state-inspector-title {
+    color: #aa00aa;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.state-display {
+    font-size: 10px;
+    color: #cc88cc;
+    white-space: pre-wrap;
+    max-height: 150px;
+    overflow-y: auto;
+    background: #110011;
+    padding: 8px;
+    border: 1px solid #440044;
+    border-radius: 2px;
+}
+
+/* Toggle Controls */
+.toggle-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.toggle-checkbox {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #0088ff;
+    background: #000022;
+    position: relative;
+    cursor: pointer;
+}
+
+.toggle-checkbox:checked {
+    background: #0088ff;
+}
+
+.toggle-checkbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 0;
+    left: 2px;
+    color: #000022;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.toggle-label {
+    color: #0088ff;
+    font-size: 11px;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+/* Audio Testing */
+.audio-test-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.audio-file-select {
+    background: #002200;
+    border: 1px solid #004400;
+    color: #00aa00;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    padding: 4px;
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Minigame Testing */
+.minigame-test-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.minigame-select {
+    background: #220022;
+    border: 1px solid #440044;
+    color: #aa00aa;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    padding: 4px;
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Story Navigation */
+.story-nav-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.chapter-select {
+    background: #002200;
+    border: 1px solid #004400;
+    color: #00aa00;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    padding: 4px;
+}
+
+/* Responsive Development Controls */
+@media (max-width: 768px) {
+    .dev-controls {
+        padding: 10px;
+    }
+
+    .dev-buttons {
+        flex-direction: column;
+    }
+
+    .dev-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .toggle-controls {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .debug-console {
+        max-height: 150px;
+    }
+
+    .state-display {
+        max-height: 100px;
+        font-size: 9px;
+    }
+}
+
+/* Hide development controls when not in development mode */
+body:not(.development-mode) .dev-controls {
+    display: none !important;
+}

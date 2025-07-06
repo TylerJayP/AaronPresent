@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple MQTT Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .log {
+            border: 1px solid #0f0;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        button {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Simple MQTT Connection Test</h1>
+
+    <div class="status" id="status">Initializing...</div>
+
+    <button onclick="testBrokerReachability()">Test Broker Reachability</button>
+    <button onclick="loadMQTTAndTest()">Load MQTT.js & Test</button>
+    <button onclick="clearLog()">Clear Log</button>
+
+    <div class="log" id="log"></div>
+
+    <script>
+        function log(msg) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${msg}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(msg);
+        }
+
+        function setStatus(msg) {
+            document.getElementById('status').textContent = msg;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Test if we can reach the broker at all
+        async function testBrokerReachability() {
+            log('Testing broker reachability...');
+
+            // EMQX broker typically uses these WebSocket paths
+            const wsEndpoints = [
+                'ws://broker.emqx.io:8083/mqtt',  // Standard MQTT over WebSocket path
+                'ws://broker.emqx.io:8083',       // Direct WebSocket port
+                'ws://broker.emqx.io:8083/ws'     // Alternative WebSocket path
+            ];
+
+            let connected = false;
+
+            for (let endpoint of wsEndpoints) {
+                if (connected) break;
+
+                try {
+                    log(`Testing WebSocket endpoint: ${endpoint}`);
+
+                    await new Promise((resolve, reject) => {
+                        const ws = new WebSocket(endpoint);
+
+                        const timeout = setTimeout(() => {
+                            if (ws.readyState === WebSocket.CONNECTING) {
+                                log(`❌ Timeout connecting to: ${endpoint}`);
+                                ws.close();
+                                resolve(); // Continue to next endpoint
+                            }
+                        }, 5000);
+
+                        ws.onopen = function () {
+                            log(`✅ WebSocket connection successful to: ${endpoint}`);
+                            setStatus('Broker reachable via WebSocket');
+                            connected = true;
+                            clearTimeout(timeout);
+                            ws.close();
+                            resolve();
+                        };
+
+                        ws.onerror = function (error) {
+                            log(`❌ WebSocket connection failed to: ${endpoint}`);
+                            clearTimeout(timeout);
+                            resolve(); // Continue to next endpoint
+                        };
+
+                        ws.onclose = function (event) {
+                            log(`WebSocket ${endpoint} closed: Code ${event.code}, Reason: ${event.reason || 'None'}`);
+                            clearTimeout(timeout);
+                            resolve();
+                        };
+                    });
+
+                } catch (error) {
+                    log(`❌ WebSocket test error for ${endpoint}: ${error.message}`);
+                }
+            }
+
+            if (!connected) {
+                log('❌ All WebSocket endpoints failed');
+                log('⚠️  Note: This is normal - MQTT.js handles the connection differently');
+                log('📝 The raw WebSocket test is just for debugging - MQTT.js should still work');
+                setStatus('Raw WebSocket test failed (but MQTT should still work)');
+            }
+        }
+
+        // Load MQTT.js and test connection
+        async function loadMQTTAndTest() {
+            log('Loading MQTT.js library...');
+
+            // Try different MQTT.js sources
+            const sources = [
+                'https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js',
+                'https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js',
+                // Fallback to older version
+                'https://unpkg.com/mqtt@4.2.8/dist/mqtt.min.js'
+            ];
+
+            for (let source of sources) {
+                try {
+                    log(`Trying to load from: ${source}`);
+
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = source;
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+
+                    // Check if mqtt is now available
+                    if (typeof mqtt !== 'undefined') {
+                        log(`✅ MQTT.js loaded successfully from: ${source}`);
+                        setStatus('MQTT.js loaded - testing connection...');
+                        await testMQTTConnection();
+                        return;
+                    } else {
+                        log(`❌ MQTT.js loaded but mqtt object not available from: ${source}`);
+                    }
+
+                } catch (error) {
+                    log(`❌ Failed to load from: ${source} - ${error.message}`);
+                }
+            }
+
+            log('❌ All MQTT.js sources failed');
+            setStatus('Failed to load MQTT.js');
+        }
+
+        async function testMQTTConnection() {
+            if (typeof mqtt === 'undefined') {
+                log('❌ MQTT.js not available');
+                return;
+            }
+
+            log('Testing MQTT connection...');
+
+            const clientId = `SimpleTest_${Date.now()}`;
+            const options = {
+                clientId: clientId,
+                keepalive: 30,
+                clean: true,
+                connectTimeout: 10000,
+                reconnectPeriod: 0
+            };
+
+            log(`Connecting with client ID: ${clientId}`);
+            log(`Options: ${JSON.stringify(options)}`);
+
+            try {
+                const client = mqtt.connect('ws://broker.emqx.io:8083/mqtt', options);
+
+                client.on('connect', function () {
+                    log('✅ MQTT connected successfully!');
+                    setStatus('MQTT connected successfully');
+
+                    // Test subscribe
+                    client.subscribe('test/simple', function (err) {
+                        if (err) {
+                            log('❌ Subscribe failed: ' + err.message);
+                        } else {
+                            log('✅ Subscribed to test/simple');
+
+                            // Test publish
+                            client.publish('test/simple', 'Hello from simple test!', function (err) {
+                                if (err) {
+                                    log('❌ Publish failed: ' + err.message);
+                                } else {
+                                    log('✅ Published test message');
+                                }
+                            });
+                        }
+                    });
+                });
+
+                client.on('message', function (topic, message) {
+                    log(`📨 Received: ${topic} = ${message.toString()}`);
+                });
+
+                client.on('error', function (error) {
+                    log('❌ MQTT error: ' + error.message);
+                    setStatus('MQTT connection error');
+                });
+
+                client.on('close', function () {
+                    log('MQTT connection closed');
+                    setStatus('MQTT disconnected');
+                });
+
+                // Disconnect after 30 seconds
+                setTimeout(() => {
+                    log('Disconnecting...');
+                    client.end();
+                }, 30000);
+
+            } catch (error) {
+                log('❌ MQTT connection exception: ' + error.message);
+                setStatus('MQTT connection failed');
+            }
+        }
+
+        // Initialize
+        log('Simple MQTT test page loaded');
+        setStatus('Ready for testing');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whiskers and the Bubbles of Justice - Presenter</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon"
+        href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAFYSURBVDiNpZM9SwNBEIafghaChYWFhYWFhYW1lYWFhYWFjYWFjYWFhYWFhYWFhYWF">
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/development.css">
+
+    <!-- Meta tags for better mobile experience -->
+    <meta name="theme-color" content="#000000">
+    <meta name="description"
+        content="An interactive text adventure game featuring Whiskers the cat in retro 80s terminal style">
+    <meta name="keywords" content="text adventure, choose your own adventure, retro gaming, interactive story">
+</head>
+
+<body>
+    <!-- Main App Container -->
+    <div id="app" class="app-container">
+
+        <!-- Title Section -->
+        <header class="title-section">
+            <h1 class="main-title">WHISKERS AND THE BUBBLES OF JUSTICE</h1>
+            <h2 class="subtitle">A Choose-Your-Own Adventure</h2>
+            <div class="connection-status" id="connection-status">
+                <span id="mqtt-status">🔗 MQTT: Connecting...</span>
+                <span id="audio-status">🔊 Audio: Ready</span>
+            </div>
+        </header>
+
+        <!-- Main Game Area -->
+        <main class="game-area">
+
+            <!-- Story Display Section -->
+            <section class="story-section">
+                <div class="story-content" id="story-content">
+                    <div class="story-text" id="story-text">
+                        Loading adventure...
+                    </div>
+                    <div class="story-metadata" id="story-metadata">
+                        <span class="chapter-indicator" id="chapter-indicator">Chapter: Loading</span>
+                        <span class="audio-indicator" id="audio-indicator" style="display: none;">🔊 Playing</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Choices Section -->
+            <section class="choices-section" id="choices-section">
+                <div class="choices-container" id="choices-container">
+                    <!-- Choices will be dynamically added here -->
+                </div>
+                <div class="choice-helper" id="choice-helper" style="display: none;">
+                    Use MQTT commands to select choices
+                </div>
+            </section>
+
+            <!-- Minigame Container -->
+            <section class="minigame-section" id="minigame-section" style="display: none;">
+                <div class="minigame-header">
+                    <span class="minigame-title">Interactive Challenge</span>
+                    <button class="minigame-close" id="minigame-close" style="display: none;">×</button>
+                </div>
+                <div class="minigame-container" id="minigame-container">
+                    <!-- Minigames will be loaded here -->
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Player Stats Display -->
+        <section class="player-stats-section">
+            <div class="player-stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Health</span>
+                    <span class="stat-value" id="health-value">100</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Temperament</span>
+                    <span class="stat-value" id="courage-value">Normal</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Location</span>
+                    <span class="stat-value" id="location-value">Home</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span id="game-status">Ready</span>
+                <span id="story-progress">Progress: 0%</span>
+            </div>
+            <div class="status-right">
+                <button class="reset-btn" id="reset-btn" title="Reset Game">🔄</button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Development Panel (only visible in development mode) -->
+    <div id="dev-panel" class="dev-panel" style="display: none;">
+
+        <!-- Development Panel Header -->
+        <div class="dev-header">
+            <h3>🛠️ Development Tools</h3>
+            <button id="dev-toggle" class="dev-toggle">Hide</button>
+        </div>
+
+        <!-- MQTT Simulator Section -->
+        <div class="dev-section">
+            <div class="dev-section-header">▼ MQTT Simulator</div>
+            <div class="dev-section-content" id="mqtt-simulator">
+                <!-- MQTT simulation controls will be added here -->
+            </div>
+        </div>
+
+        <!-- Test Controls Section -->
+        <div class="dev-section">
+            <div class="dev-section-header">▼ Test Controls</div>
+            <div class="dev-section-content" id="test-controls">
+                <!-- Test buttons will be added here -->
+            </div>
+        </div>
+
+        <!-- Event Log Section -->
+        <div class="dev-section">
+            <div class="dev-section-header">▼ Event Log</div>
+            <div class="dev-section-content" id="event-log">
+                <!-- Event log display will be added here -->
+            </div>
+        </div>
+
+        <!-- State Inspector Section -->
+        <div class="dev-section">
+            <div class="dev-section-header">▼ State Inspector</div>
+            <div class="dev-section-content">
+                <pre id="state-inspector" class="state-inspector">Game state will appear here...</pre>
+            </div>
+        </div>
+
+        <!-- Keyboard Shortcuts Help -->
+        <div class="dev-section">
+            <div class="dev-section-header">▼ Keyboard Shortcuts</div>
+            <div class="dev-section-content">
+                <div class="shortcuts-help">
+                    <div><code>Ctrl+4</code> - Toggle debug panel</div>
+                    <div><code>Ctrl+1</code> - Proceed chapter</div>
+                    <div><code>Ctrl+2</code> - Make choice</div>
+                    <div><code>Ctrl+3</code> - Reset game</div>
+                    <div><code>Ctrl+Shift+R</code> - Force reset</div>
+                    <div><code>Ctrl+Shift+D</code> - Dump game state</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Development Toggle Button (always visible in dev mode) -->
+    <button id="dev-show-toggle" class="dev-show-toggle" style="display: none;" title="Show Development Tools">
+        🛠️
+    </button>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Initializing Whiskers Adventure...</div>
+            <div class="loading-details" id="loading-details">Starting up...</div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="error-modal" style="display: none;">
+        <div class="error-content">
+            <div class="error-header">
+                <span class="error-title">⚠️ Error</span>
+                <button class="error-close" id="error-close">×</button>
+            </div>
+            <div class="error-message" id="error-message">
+                An error occurred.
+            </div>
+            <div class="error-actions">
+                <button class="error-btn" id="error-retry">Retry</button>
+                <button class="error-btn" id="error-continue">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Autoplay Warning -->
+    <div id="autoplay-warning" class="autoplay-warning" style="display: none;">
+        <div class="autoplay-content">
+            <div class="autoplay-text">
+                🔊 Click anywhere to enable audio playback
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Script (must be loaded first) -->
+    <script src="config.js"></script>
+
+    <!-- MQTT.js Library (load with fallback sources for better reliability) -->
+    <script>
+        // Global flag to track MQTT.js availability
+        window.mqttLibraryReady = false;
+
+        // Load MQTT.js with multiple fallback sources
+        (function loadMQTTLibrary() {
+            const sources = [
+                'https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js',
+                'https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js',
+                'https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js'
+            ];
+
+            let sourceIndex = 0;
+
+            function tryLoadSource() {
+                if (sourceIndex >= sources.length) {
+                    console.error('❌ All MQTT.js sources failed to load');
+                    window.mqttLibraryReady = false;
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = sources[sourceIndex];
+
+                script.onload = function () {
+                    console.log(`✅ MQTT.js loaded successfully from: ${sources[sourceIndex]}`);
+
+                    // Wait a moment for the library to be fully available
+                    setTimeout(() => {
+                        if (typeof mqtt !== 'undefined') {
+                            console.log('✅ MQTT.js library confirmed available');
+                            window.mqttLibraryReady = true;
+
+                            // Trigger app initialization if it's waiting
+                            if (window.startAppWhenReady) {
+                                window.startAppWhenReady();
+                            }
+                        } else {
+                            console.warn('⚠️ MQTT.js loaded but mqtt object not available');
+                            sourceIndex++;
+                            tryLoadSource();
+                        }
+                    }, 100);
+                };
+
+                script.onerror = function () {
+                    console.warn(`❌ Failed to load MQTT.js from: ${sources[sourceIndex]}`);
+                    sourceIndex++;
+                    tryLoadSource();
+                };
+
+                document.head.appendChild(script);
+            }
+
+            tryLoadSource();
+        })();
+    </script>
+
+    <!-- Story Data -->
+    <script src="data/story-content.js"></script>
+
+    <!-- Core Application Modules -->
+    <script src="js/ui-manager.js"></script>
+    <script src="js/story-engine.js"></script>
+    <script src="js/audio-manager.js"></script>
+    <script src="js/minigame-manager.js"></script>
+    <script src="js/mqtt-client.js"></script>
+    <script src="js/development-tools.js"></script>
+
+    <!-- Main Application (must be loaded last) -->
+    <script src="js/app.js"></script>
+
+    <!-- Initialization Script -->
+    <script>
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            if (window.app && window.app.handleError) {
+                window.app.handleError('global_error', event.error);
+            }
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            if (window.app && window.app.handleError) {
+                window.app.handleError('unhandled_promise', event.reason);
+            }
+        });
+
+        // Initialize the application when DOM is ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Function to start the app
+            async function startApp() {
+                try {
+                    console.log('🚀 Starting Whiskers Presenter App...');
+
+                    // Create and initialize the main application
+                    window.app = new WhiskersPresenterApp();
+                    await window.app.initialize();
+
+                    console.log('✅ Whiskers Presenter App started successfully');
+
+                } catch (error) {
+                    console.error('❌ Failed to start application:', error);
+
+                    // Show error to user
+                    const loadingScreen = document.getElementById('loading-screen');
+                    if (loadingScreen) {
+                        loadingScreen.innerHTML = `
+                            <div class="loading-content">
+                                <div class="error-icon">⚠️</div>
+                                <div class="error-title">Failed to Start</div>
+                                <div class="error-message">${error.message}</div>
+                                <button onclick="location.reload()" class="error-btn">Reload Page</button>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            // Check if MQTT.js is ready, or wait for it
+            if (window.mqttLibraryReady) {
+                console.log('📡 MQTT.js already ready, starting app immediately');
+                await startApp();
+            } else {
+                console.log('⏳ Waiting for MQTT.js library to load...');
+
+                // Set up callback for when MQTT.js is ready
+                window.startAppWhenReady = startApp;
+
+                // Also set a timeout in case MQTT.js never loads
+                setTimeout(async () => {
+                    if (!window.app) {
+                        console.warn('⚠️ MQTT.js loading timeout, starting app without MQTT');
+                        await startApp();
+                    }
+                }, 10000); // 10 second timeout
+            }
+        });
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (window.app) {
+                if (document.hidden) {
+                    window.app.handlePageHidden();
+                } else {
+                    window.app.handlePageVisible();
+                }
+            }
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (window.app && window.app.cleanup) {
+                window.app.cleanup();
+            }
+        });
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', (event) => {
+            if (window.app && window.app.handlePopState) {
+                window.app.handlePopState(event);
+            }
+        });
+
+        // Development mode setup
+        if (CONFIG.DEVELOPMENT_MODE) {
+            console.log('🛠️ Development mode enabled');
+
+            // Add global MQTT test function for debugging
+            window.testMQTTConnection = function () {
+                console.log('🧪 Testing MQTT connection from console...');
+
+                if (typeof mqtt === 'undefined') {
+                    console.error('❌ MQTT.js library not loaded');
+                    return;
+                }
+
+                const testClient = mqtt.connect('ws://broker.emqx.io:8083/mqtt', {
+                    clientId: `ConsoleTest_${Date.now()}`,
+                    keepalive: 30,
+                    clean: true,
+                    connectTimeout: 10000,
+                    reconnectPeriod: 0
+                });
+
+                testClient.on('connect', () => {
+                    console.log('✅ Console MQTT test: Connected successfully!');
+                    testClient.subscribe('test/console', (err) => {
+                        if (!err) {
+                            testClient.publish('test/console', 'Hello from console test!');
+                        }
+                    });
+                });
+
+                testClient.on('message', (topic, message) => {
+                    console.log('📨 Console MQTT test: Received:', topic, message.toString());
+                    testClient.end();
+                });
+
+                testClient.on('error', (error) => {
+                    console.error('❌ Console MQTT test error:', error);
+                });
+
+                return testClient;
+            };
+
+            // Show development toggle button
+            document.addEventListener('DOMContentLoaded', () => {
+                const devShowToggle = document.getElementById('dev-show-toggle');
+                if (devShowToggle) {
+                    devShowToggle.style.display = 'block';
+                    devShowToggle.addEventListener('click', () => {
+                        const devPanel = document.getElementById('dev-panel');
+                        if (devPanel) {
+                            devPanel.style.display = 'block';
+                        }
+                    });
+                }
+            });
+        }
+
+        // Add console welcome message
+        console.log(`
+        🐱 Whiskers and the Bubbles of Justice - Presenter App
+        
+        Welcome to the terminal! This app communicates via MQTT with the Orchestrator.
+        
+        ${CONFIG.DEVELOPMENT_MODE ? `
+        🛠️ Development Mode Active:
+        - Press Ctrl+4 to toggle debug panel
+        - Check the development tools for testing features
+        - All modules include placeholder implementations
+        ` : `
+        📡 Production Mode:
+        - All interactions via MQTT only
+        - Connect to ${CONFIG.MQTT.BROKER}:${CONFIG.MQTT.PORT}
+        `}
+        
+        Have fun with the adventure! 🎮
+        `);
+    </script>
+
+</body>
+
+</html>

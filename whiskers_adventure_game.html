@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whiskers and the Bubbles of Justice</title>
+    <style>
+      body {
+        background: #000;
+        color: #00ff00;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        margin: 0;
+        padding: 20px;
+        line-height: 1.4;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .title {
+        text-align: center;
+        color: #ffff00;
+        font-size: 18px;
+        margin-bottom: 20px;
+        text-decoration: underline;
+      }
+
+      .game-area {
+        border: 2px solid #00ff00;
+        padding: 15px;
+        min-height: 500px;
+        background: #001100;
+      }
+
+      .story-text {
+        white-space: pre-wrap;
+        margin-bottom: 20px;
+        min-height: 300px;
+        overflow-y: auto;
+        border-bottom: 1px solid #004400;
+        padding-bottom: 15px;
+      }
+
+      .choices {
+        margin-bottom: 15px;
+      }
+
+      .choice {
+        display: block;
+        width: 100%;
+        background: #002200;
+        border: 1px solid #00ff00;
+        color: #00ff00;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        padding: 10px;
+        margin: 5px 0;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .choice:hover {
+        background: #004400;
+        color: #ffff00;
+      }
+
+      .choice:active {
+        background: #006600;
+      }
+
+      .status-bar {
+        border-top: 1px solid #00ff00;
+        padding-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        color: #ffff00;
+        font-size: 12px;
+      }
+
+      .special {
+        color: #00ffff;
+      }
+
+      .warning {
+        color: #ffaa00;
+      }
+
+      .error {
+        color: #ff0000;
+      }
+
+      .success {
+        color: #00ff00;
+        font-weight: bold;
+      }
+
+      .restart-btn {
+        background: #440000;
+        border: 1px solid #ff0000;
+        color: #ff0000;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+
+      .restart-btn:hover {
+        background: #660000;
+        color: #ffff00;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="title">WHISKERS AND THE BUBBLES OF JUSTICE</div>
+      <div class="title">A Choose-Your-Own Adventure</div>
+
+      <div class="game-area">
+        <div class="story-text" id="story"></div>
+        <div class="choices" id="choices"></div>
+        <div class="status-bar">
+          <div id="status">Health: 100 | Courage: Normal | Location: Home</div>
+          <button class="restart-btn" onclick="game.restart()">
+            RESTART GAME
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      class ChooseYourAdventure {
+        constructor() {
+          this.currentScene = "start";
+          // Check for health in sessionStorage
+          let storedHealth = Number(sessionStorage.getItem("health"));
+          this.gameState = {
+            health: isNaN(storedHealth) ? 100 : storedHealth,
+            courage: "normal",
+            hasBubblePowers: false,
+            metBubblina: false,
+            dustyReformed: false,
+            location: "Home",
+            bubbleEnergy: 0,
+            hasAlly: false,
+            gameEnded: false,
+          };
+
+          this.storyElement = document.getElementById("story");
+          this.choicesElement = document.getElementById("choices");
+          this.statusElement = document.getElementById("status");
+
+          this.scenes = {
+            start: {
+              text: `You are Whiskers, an ordinary orange tabby cat living in the cozy suburb of Maplewood. Your days are pleasantly predictable: morning naps in sunbeams, afternoon bird-watching from windowsills, and evening belly rubs from your human, Mrs. Henderson.
+
+This Tuesday morning, Mrs. Henderson has just left for her weekly grocery run. You're settling into your favorite sunny spot by the window, watching dust motes dance in the golden light.
+
+Suddenly, the house begins to rumble and shake! The floorboards creak ominously beneath you. From the basement comes an otherworldly GROWL that makes your fur stand on end!
+
+CRASH! The basement door bursts open!
+
+Out rolls the most terrifying sight you've ever seen: a dust bunny the size of a small car, crackling with static electricity and sporting glowing red eyes!
+
+"AT LAST!" it roars in a voice like a vacuum cleaner played in reverse. "I am DUSTZILLA! Too long have I been swept aside, ignored, and banished to dark corners! Now I shall have my revenge on all clean things!"
+
+What do you do?`,
+              choices: [
+                {
+                  text: "1. Hide behind the couch like any sensible cat would do",
+                  action: "hide",
+                },
+                {
+                  text: "2. Run upstairs to get a better view of the situation",
+                  action: "investigate",
+                },
+                {
+                  text: "3. Hiss and arch your back to try to scare the monster",
+                  action: "confront",
+                },
+              ],
+            },
+
+            hide: {
+              text: `You do what any sensible house cat would do—you scramble behind the couch, your claws clicking on the hardwood floor. Your heart pounds as you peer out from your hiding spot.
+
+Dustzilla rolls through the house, leaving trails of lint and debris in its wake. Picture frames grow dusty, the clean kitchen becomes grimy, and even the air seems to thicken with particles. Your beloved home is transforming into a nightmare of neglect right before your eyes!
+
+"Where are you, little cat?" Dustzilla rumbles menacingly. "I can smell your fear... and your cleanliness!"
+
+From your hiding spot, you notice something strange. A ray of sunlight is hitting Mrs. Henderson's collection of antique soap bubble makers on the kitchen windowsill, causing them to glow with an ethereal light!
+
+What's your next move?`,
+              choices: [
+                {
+                  text: "1. Stay hidden and hope the monster goes away",
+                  action: "stayHidden",
+                },
+                {
+                  text: "2. Sneak toward the glowing bubble makers",
+                  action: "approachBubbles",
+                },
+                {
+                  text: "3. Make a dash for the front door to escape outside",
+                  action: "escape",
+                },
+              ],
+            },
+
+            investigate: {
+              text: `Your curiosity gets the better of you—after all, you are a cat! You bound up the stairs three at a time, your paws silent on the carpet. From the upstairs landing, you have a perfect view of the chaos below.
+
+Dustzilla is massive, filling nearly half the living room. As it moves, everything it touches becomes covered in grime and neglect. You watch in horror as your favorite sunny spot becomes dull and dusty.
+
+But wait! From your elevated position, you notice something the monster hasn't seen yet. Mrs. Henderson's collection of antique soap bubble makers on the kitchen windowsill is beginning to glow with a strange, ethereal light as sunlight hits them!
+
+"I know you're up there, little furball!" Dustzilla calls out. "You can't hide from me forever!"
+
+What do you do?`,
+              choices: [
+                {
+                  text: "1. Leap down onto Dustzilla's back for a surprise attack",
+                  action: "surpriseAttack",
+                },
+                {
+                  text: "2. Try to get to the glowing bubble makers without being seen",
+                  action: "sneakToBubbles",
+                },
+                {
+                  text: "3. Knock over a plant to create a distraction",
+                  action: "distraction",
+                },
+              ],
+            },
+
+            confront: {
+              text: `You arch your back, puff up your fur to twice your normal size, and let out the most intimidating hiss you can muster. Your orange fur stands on end like you've been struck by lightning!
+
+"HSSSSSSSSS!"
+
+Dustzilla pauses for a moment, then... laughs. It's a terrible sound like static electricity mixed with the whir of a broken vacuum cleaner.
+
+"Oh, how adorable! A tiny house cat thinks it can scare ME! I am the accumulation of years of neglected corners, forgotten spaces, and unswept floors!"
+
+But your brave display isn't entirely in vain. Your courage seems to have awakened something in the house itself. The sunlight streaming through the kitchen window intensifies, striking Mrs. Henderson's collection of antique soap bubble makers and causing them to glow with ethereal light!
+
+"What... what is that light?" Dustzilla growls, distracted.
+
+What do you do next?`,
+              choices: [
+                {
+                  text: "1. Use the distraction to investigate the glowing bubble makers",
+                  action: "quicklyToBubbles",
+                },
+                {
+                  text: "2. Continue confronting Dustzilla to keep it distracted",
+                  action: "keepDistracted",
+                },
+                {
+                  text: "3. Try to climb the curtains to get out of reach",
+                  action: "climbCurtains",
+                },
+              ],
+            },
+
+            stayHidden: {
+              text: `You remain crouched behind the couch, hoping against hope that this nightmare will end. But Dustzilla's influence continues to spread throughout your home. The air grows thicker with dust, and you can feel your health declining as the environment becomes more oppressive.
+
+Minutes pass like hours. The glowing bubble makers on the windowsill pulse with increasing urgency, as if calling to you. You realize that hiding won't solve this problem—Dustzilla will eventually find you, and by then, your home will be completely ruined.
+
+"I can wait all day, little cat," Dustzilla chuckles malevolently. "Sooner or later, you'll have to come out, and when you do..."
+
+Your health is starting to suffer from the dusty air. You're running out of time!
+
+What do you do?`,
+              choices: [
+                {
+                  text: "1. Finally make a break for the bubble makers",
+                  action: "desperateBubbles",
+                },
+                {
+                  text: "2. Try to sneak out the back door while Dustzilla is distracted",
+                  action: "backDoor",
+                },
+                {
+                  text: "3. Surrender and hope Dustzilla will be merciful",
+                  action: "surrender",
+                },
+              ],
+            },
+
+            approachBubbles: {
+              text: `You slink low to the ground, using every ounce of your natural cat stealth. Step by silent step, you make your way toward the kitchen windowsill where the bubble makers glow with increasing intensity.
+
+As you get closer, the largest bottle begins to shimmer and pulse. Suddenly, from within it emerges a translucent, shimmering figure—beautiful and ethereal, like sunlight given form!
+
+"Fear not, brave Whiskers," the figure speaks in a voice like wind chimes. "I am Bubblina, the ancient guardian of cleanliness and joy. You have been chosen to wield the power of the Bubbles of Justice!"
+
+"But I'm just a cat!" you whisper.
+
+"Every hero starts as 'just' something," Bubblina replies gently. "Your love for your home, your natural agility, and your pure spirit make you the perfect champion."
+
+She extends a shimmering hand toward you.
+
+What do you do?`,
+              choices: [
+                {
+                  text: "1. Accept Bubblina's offer and touch her hand",
+                  action: "acceptPower",
+                },
+                {
+                  text: "2. Ask Bubblina to explain more about these powers first",
+                  action: "askQuestions",
+                },
+                {
+                  text: "3. Hesitate and look back at the approaching Dustzilla",
+                  action: "hesitate",
+                },
+              ],
+            },
+
+            acceptPower: {
+              text: `Without hesitation, you reach out with your paw and touch Bubblina's shimmering hand. The moment you make contact, a warm, tingling sensation flows through your entire body!
+
+Your orange fur begins to shimmer with an iridescent sheen, like oil on water. You feel lighter, more agile, and filled with a sense of purpose you've never experienced before. Most amazingly, you discover you can create bubbles with just a flick of your paws—not ordinary bubbles, but Bubbles of Justice that sparkle with cleansing power!
+
+"The power is yours now, champion," Bubblina says as she begins to fade. "Remember: true cleansing comes not from force, but from love and care."
+
+Just then, Dustzilla notices the commotion and rolls toward you with a menacing rumble. "What trickery is this? No matter! I'll crush you and your fancy soap bubbles!"
+
+Your first test as a hero is upon you! Your bubble energy is at maximum power.
+
+What's your battle strategy?`,
+              choices: [
+                {
+                  text: "1. Create a barrier of protective bubbles and plan your attack",
+                  action: "defensiveStrategy",
+                },
+                {
+                  text: "2. Go on the offensive immediately with cleansing bubbles",
+                  action: "offensiveStrategy",
+                },
+                {
+                  text: "3. Try to reason with Dustzilla while using bubbles to calm it",
+                  action: "diplomaticStrategy",
+                },
+              ],
+            },
+
+            defensiveStrategy: {
+              text: `You leap gracefully into the air, creating a shimmering wall of protective bubbles around yourself. The bubbles form a beautiful, iridescent barrier that sparkles in the sunlight.
+
+Dustzilla charges forward, but when it hits your bubble barrier, the cleansing power causes it to recoil with a shriek! "Impossible! My grime should dissolve those pathetic bubbles!"
+
+From within your protective dome, you study your opponent. You notice that beneath all that accumulated dust and debris, Dustzilla seems... lonely. Its attacks are powerful but clumsy, like it's been ignored for so long it's forgotten how to interact properly.
+
+"You can't hide in there forever!" Dustzilla roars, but there's a hint of sadness in its voice.
+
+Your defensive strategy is working, giving you time to understand your enemy. Your bubble energy is still strong.
+
+What's your next move?`,
+              choices: [
+                {
+                  text: "1. Launch a coordinated bubble attack while Dustzilla is frustrated",
+                  action: "coordinatedAttack",
+                },
+                {
+                  text: "2. Try to communicate with the lonely creature inside the monster",
+                  action: "communicate",
+                },
+                {
+                  text: "3. Create bubble platforms to gain higher ground for a better position",
+                  action: "highGround",
+                },
+              ],
+            },
+
+            communicate: {
+              text: `Something in Dustzilla's voice touches your heart. Instead of attacking, you lower your bubble barrier slightly and speak gently:
+
+"You said you've been ignored and swept aside. That must have been very lonely."
+
+Dustzilla stops mid-charge, looking confused. "I... what? You're supposed to be afraid of me!"
+
+"I am afraid," you admit honestly, "but I'm also listening. How long have you been forgotten down in that basement?"
+
+The massive dust creature seems to deflate slightly. "Years... so many years. Every time someone cleaned, they pushed me further into dark corners. I just wanted someone to notice I existed."
+
+You create small, gentle bubbles that float around Dustzilla—not to attack, but to show you're not afraid to get close. "I notice you now. But covering everything in dust isn't the answer."
+
+"Then... what is?" Dustzilla asks, its voice smaller now.
+
+You're on the verge of a breakthrough! What do you offer?`,
+              choices: [
+                {
+                  text: "1. Offer to help find Dustzilla a proper place where it belongs",
+                  action: "offerPlace",
+                },
+                {
+                  text: "2. Suggest Dustzilla could help keep the house clean instead of dirty",
+                  action: "offerPurpose",
+                },
+                {
+                  text: "3. Invite Dustzilla to be your friend and ally",
+                  action: "offerFriendship",
+                },
+              ],
+            },
+
+            offerFriendship: {
+              text: `"What if... what if instead of being enemies, we became friends?" you suggest, creating a small, warm bubble that drifts gently toward Dustzilla.
+
+The massive creature goes very still. "Friends? With... with me? But I'm just dust and debris. Nobody wants to be friends with something they sweep away."
+
+"Everyone deserves friendship," you say sincerely. "And think about it—who knows more about all the hidden places in houses than you do? You could be the best helper anyone could ask for!"
+
+The bubble touches Dustzilla's grimy surface, and something amazing happens. Instead of being repelled, the dust creature begins to glow softly. The love and acceptance in your offer is more powerful than any cleaning solution!
+
+"I... I would like that very much," Dustzilla whispers, and as it speaks, it begins to shrink. The anger and loneliness that made it grow so large starts to fade away.
+
+Soon, where the monster once stood, there's just a small, friendly dust bunny wearing a tiny bow tie made from a soap bubble.
+
+"Call me Dusty," it says shyly. "And... thank you for seeing the real me."
+
+VICTORY! You've won through compassion!`,
+              choices: [
+                {
+                  text: "1. Welcome Dusty as your new sidekick and explore your neighborhood",
+                  action: "exploreWithDusty",
+                },
+                {
+                  text: "2. Show Dusty around the house and establish new cleaning routines",
+                  action: "establishRoutines",
+                },
+                {
+                  text: "3. Celebrate your victory and wait for Mrs. Henderson to return",
+                  action: "celebrateVictory",
+                },
+              ],
+            },
+
+            exploreWithDusty: {
+              text: `"Come on, Dusty!" you say excitedly. "Let's explore Maplewood together!"
+
+You and your new friend venture outside, where you discover that other houses in the neighborhood have been affected by dust creatures too. But now, with Dusty's help, you can understand what they really need—not to be swept away, but to be given purpose and friendship.
+
+Together, you establish the "Clean Team" of Maplewood. Dusty helps you identify where dust problems start, and you use your Bubbles of Justice to bring cleanliness through love and care rather than harsh chemicals.
+
+Word spreads quickly through the neighborhood about the orange cat who solved problems with kindness. Soon, children are asking their parents if they can have "cleaning parties" where everyone works together to take care of their homes.
+
+Squeaky the hamster becomes your first official team member, followed by various birds who appreciate clean perches, and even Barker the German Shepherd, who grudgingly admits that clean fire hydrants are better than dusty ones.
+
+Mrs. Henderson returns to find not only the cleanest house in Maplewood, but also a small dust bunny in a bow tie sitting politely by the door.
+
+"Well, aren't you adorable," she says, picking up Dusty. "I suppose you can stay, but you'll need to help keep things tidy."
+
+THE END - HERO OF MAPLEWOOD!
+
+You've become the neighborhood's beloved protector, solving problems with compassion and creating a community of friends who care for each other and their homes.`,
+              choices: [
+                {
+                  text: "1. Start a new adventure as the Guardian of Cleanliness",
+                  action: "newAdventure",
+                },
+                {
+                  text: "2. Reflect on your journey from ordinary cat to hero",
+                  action: "reflect",
+                },
+                {
+                  text: "3. Plan future adventures with your team",
+                  action: "planFuture",
+                },
+              ],
+            },
+
+            // Add more failure and alternate paths
+            surrender: {
+              text: `Defeated and exhausted, you emerge from behind the couch with your tail low and your ears flattened.
+
+"I give up," you meow sadly. "You win, Dustzilla."
+
+The dust monster rolls closer, towering over you. But instead of the triumph you expected to see, there's something almost... disappointed in its glowing red eyes.
+
+"That's it?" Dustzilla grumbles. "No fight? No clever cat tricks? I've been planning this revenge for years, and you just... surrender?"
+
+You look up at the creature, too tired to be afraid anymore. "What's the point? You're too big, too powerful. I'm just one small cat."
+
+Dustzilla deflates slightly. "Well... yes, but..." It seems confused by your complete capitulation. "I was expecting at least some resistance! This is very anticlimactic."
+
+The awkward silence stretches between you. Even villainous victory seems hollow when it comes too easily.
+
+GAME OVER - Perhaps there was another way?`,
+              choices: [
+                { text: "1. Try again with more courage", action: "start" },
+                { text: "2. Restart the adventure", action: "start" },
+                { text: "3. Begin a new story", action: "start" },
+              ],
+            },
+
+            // More branching paths...
+            newAdventure: {
+              text: `Months have passed since your victory over Dustzilla, and life in Maplewood has never been better. You've established yourself as the Guardian of Cleanliness, with Dusty as your trusted partner and a whole team of animal allies.
+
+But today, something new is stirring. Reports come in from Squeaky the hamster about strange happenings in the old abandoned house at the end of Elm Street. Windows that were once dark now glow with an eerie green light, and neighbors report hearing the sound of... vacuums running at all hours?
+
+"It sounds like we might have a new challenge," Dusty observes, adjusting his tiny bow tie nervously. "The old Grimworth mansion has been empty for decades. If something's awakened there..."
+
+Your bubble powers tingle with anticipation. Could this be the rise of Dustzilla's cousin, Grimzilla? Or perhaps something even more challenging?
+
+The birds report seeing strange, swirling vortexes of dirt being sucked INTO the house rather than out of it. This is definitely not normal dust bunny behavior.
+
+What's your approach to this new mystery?`,
+              choices: [
+                {
+                  text: "1. Assemble your full team and investigate the mansion together",
+                  action: "teamInvestigation",
+                },
+                {
+                  text: "2. Scout the mansion alone first to assess the threat",
+                  action: "soloScout",
+                },
+                {
+                  text: "3. Research the mansion's history before taking any action",
+                  action: "research",
+                },
+              ],
+            },
+          };
+
+          this.displayScene("start");
+        }
+
+        displayScene(sceneKey) {
+          if (!this.scenes[sceneKey]) {
+            console.error(`Scene ${sceneKey} not found`);
+            return;
+          }
+
+          const scene = this.scenes[sceneKey];
+          this.currentScene = sceneKey;
+
+          // Update story text
+          this.storyElement.textContent = scene.text;
+
+          // Clear and populate choices
+          this.choicesElement.innerHTML = "";
+
+          if (scene.choices && !this.gameState.gameEnded) {
+            scene.choices.forEach((choice, index) => {
+              const button = document.createElement("button");
+              button.className = "choice";
+              button.textContent = choice.text;
+              button.onclick = () => this.makeChoice(choice.action);
+              this.choicesElement.appendChild(button);
+            });
+          } else if (this.gameState.gameEnded) {
+            // Game ended, show restart option
+            const restartBtn = document.createElement("button");
+            restartBtn.className = "choice";
+            restartBtn.textContent = "RESTART ADVENTURE";
+            restartBtn.onclick = () => this.restart();
+            this.choicesElement.appendChild(restartBtn);
+          }
+
+          // Update status
+          this.updateStatus();
+
+          // Scroll to top of story
+          this.storyElement.scrollTop = 0;
+        }
+
+        makeChoice(action) {
+          // Update game state based on choice
+          this.processAction(action);
+
+          // Display next scene
+          this.displayScene(action);
+        }
+
+        processAction(action) {
+          switch (action) {
+            case "hide":
+              this.gameState.courage = "cautious";
+              break;
+            case "investigate":
+              this.gameState.courage = "curious";
+              this.gameState.health += 10; // Bonus for being proactive
+              break;
+            case "confront":
+              this.gameState.courage = "brave";
+              this.gameState.health += 20; // Bonus for courage
+              break;
+            case "stayHidden":
+              this.gameState.health -= 20; // Penalty for inaction
+              this.gameState.courage = "fearful";
+              break;
+            case "acceptPower":
+              this.gameState.hasBubblePowers = true;
+              this.gameState.bubbleEnergy = 100;
+              this.gameState.metBubblina = true;
+              this.gameState.courage = "heroic";
+              break;
+            case "offerFriendship":
+              this.gameState.dustyReformed = true;
+              this.gameState.hasAlly = true;
+              this.gameState.health = 100; // Full restore for peaceful solution
+              break;
+            case "surrender":
+              this.gameState.gameEnded = true;
+              this.gameState.health = 0;
+              break;
+            case "exploreWithDusty":
+              this.gameState.location = "Neighborhood Hero";
+              this.gameState.gameEnded = true; // Victory ending
+              break;
+          }
+
+          // Ensure health stays within bounds
+          this.gameState.health = Math.max(
+            0,
+            Math.min(100, this.gameState.health)
+          );
+        }
+
+        updateStatus() {
+          let statusText = `Health: ${this.gameState.health}`;
+          statusText += ` | Courage: ${this.gameState.courage}`;
+          statusText += ` | Location: ${this.gameState.location}`;
+
+          if (this.gameState.hasBubblePowers) {
+            statusText += ` | Bubble Energy: ${this.gameState.bubbleEnergy}`;
+          }
+
+          if (this.gameState.hasAlly) {
+            statusText += ` | Ally: Dusty`;
+          }
+
+          this.statusElement.textContent = statusText;
+        }
+
+        restart() {
+          this.gameState = {
+            health: 100,
+            courage: "normal",
+            hasBubblePowers: false,
+            metBubblina: false,
+            dustyReformed: false,
+            location: "Home",
+            bubbleEnergy: 0,
+            hasAlly: false,
+            gameEnded: false,
+          };
+
+          sessionStorage.setItem("health", 100);
+
+          this.displayScene("start");
+        }
+      }
+
+      // Start the game when page loads
+      let game;
+      window.addEventListener("load", () => {
+        game = new ChooseYourAdventure();
+      });
+    </script>
+  </body>
+</html>

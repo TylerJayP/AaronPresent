@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <title>
+   Aggressive Route Minigame
+  </title>
+  <style>
+   html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+    #gameWrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    #gameCanvas {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid #00ff00;
+    }
+  </style>
+ </head>
+ <body>
+  <div id="gameWrapper">
+   <canvas id="gameCanvas"></canvas>
+  </div>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const backgroundImage = new Image();
+    backgroundImage.src = '../images/background.png';
+    backgroundImage.onerror = () => {
+      console.error("Error: Could not load background image from", backgroundImage.src);
+      if (!gameLoopStarted) gameLoop();
+    };
+
+    const playerImage = new Image();
+    playerImage.src = '../images/A_pixel_art_depiction_of_an_orange_tabby_cat_is_se.png';
+
+    const obstacleImage = new Image();
+    obstacleImage.src = '../images/monster_sprite_transparent.png';
+
+    const rows = 6;
+    const cols = 10;
+    let cellWidth, cellHeight;
+    let lastPlayerDirection = 'left';
+    let gameLoopStarted = false;
+    let gameRunning = false;
+
+    const player = {
+      x: Math.floor(cols / 2),
+      y: rows - 1,
+      size: 0,
+      image: playerImage
+    };
+
+    const obstacles = [];
+    const obstacleSpeed = 1.5;
+
+    function generateObstacles() {
+      obstacles.length = 0;
+      for (let i = 1; i < rows - 1; i++) {
+        const rowObstacles = [];
+        const direction = i % 2 === 0 ? 1 : -1;
+        const count = Math.floor(Math.random() * 3) + 2;
+        for (let j = 0; j < count; j++) {
+          rowObstacles.push({
+            x: Math.random() * canvas.width,
+            y: i * cellHeight + cellHeight / 4,
+            width: 0,
+            height: 0,
+            speed: direction * obstacleSpeed
+          });
+        }
+        obstacles.push(rowObstacles);
+      }
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('gameWrapper');
+      const aspectRatio = 2 / 3;
+      let width = wrapper.clientWidth * 0.95;
+      let height = wrapper.clientHeight * 0.95;
+
+      if (width / height > aspectRatio) {
+        width = height * aspectRatio;
+      } else {
+        height = width / aspectRatio;
+      }
+
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    function updateCellSize() {
+      cellWidth = canvas.width / cols;
+      cellHeight = canvas.height / rows;
+      player.size = cellWidth * 0.8;
+      for (let row of obstacles) {
+        for (let obs of row) {
+          obs.width = cellWidth * 0.8;
+          obs.height = cellHeight / 2;
+        }
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      updateCellSize();
+    });
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      updateCellSize();
+    });
+
+    function drawBackground() {
+      ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+    }
+
+    function drawPlayer() {
+      const px = player.x * cellWidth + cellWidth / 2 - player.size / 2;
+      const py = player.y * cellHeight + cellHeight / 2 - player.size / 2;
+      ctx.save();
+      if (lastPlayerDirection === 'right') {
+        ctx.translate(px + player.size, py);
+        ctx.scale(-1, 1);
+        ctx.drawImage(player.image, 0, 0, player.size, player.size);
+      } else {
+        ctx.translate(px, py);
+        ctx.drawImage(player.image, 0, 0, player.size, player.size);
+      }
+      ctx.restore();
+    }
+
+    function drawObstacles() {
+      for (let row of obstacles) {
+        for (let obs of row) {
+          ctx.save();
+          if (obs.speed > 0) {
+            ctx.translate(obs.x + obs.width, obs.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(obstacleImage, 0, 0, obs.width, obs.height);
+          } else {
+            ctx.translate(obs.x, obs.y);
+            ctx.drawImage(obstacleImage, 0, 0, obs.width, obs.height);
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    function moveObstacles() {
+      for (let row of obstacles) {
+        for (let obs of row) {
+          obs.x += obs.speed;
+          if (obs.x < -obs.width) obs.x = canvas.width;
+          if (obs.x > canvas.width) obs.x = -obs.width;
+        }
+      }
+    }
+
+    function checkCollision() {
+      const px = player.x * cellWidth + cellWidth / 2 - player.size / 2;
+      const py = player.y * cellHeight + cellHeight / 2 - player.size / 2;
+
+      if (player.y === 0) {
+        gameRunning = false;
+        parent.postMessage({
+          type: 'game_completed',
+          data: {
+            success: true,
+            score: 100,
+            completionTime: Date.now() - gameStartTime
+          }
+        }, '*');
+        return;
+      }
+
+      const rowIndex = player.y - 1;
+      if (rowIndex >= 0 && rowIndex < obstacles.length) {
+        for (let obs of obstacles[rowIndex]) {
+          if (
+            px < obs.x + obs.width &&
+            px + player.size > obs.x &&
+            py < obs.y + obs.height &&
+            py + player.size > obs.y
+          ) {
+            gameRunning = false;
+            window.parent.postMessage({
+              type: 'game_failed',
+              data: { success: false, reason: 'collision' }
+            }, '*');
+          }
+        }
+      }
+    }
+
+    function resetGame() {
+      player.x = Math.floor(cols / 2);
+      player.y = rows - 1;
+      lastPlayerDirection = 'left';
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+      gameLoopStarted = true;
+      drawBackground();
+      updateCellSize();
+      moveObstacles();
+      drawObstacles();
+      drawPlayer();
+      checkCollision();
+      requestAnimationFrame(gameLoop);
+    }
+
+    let gameStartTime = 0;
+
+    function startGame(gameData) {
+      gameRunning = true;
+      resizeCanvas();
+      updateCellSize();
+      generateObstacles();
+      gameStartTime = Date.now();
+      parent.postMessage({
+        type: 'game_event',
+        event: 'started',
+        data: { message: 'Game initialized' }
+      }, '*');
+      backgroundImage.onload = () => {
+        gameLoop();
+      };
+      if (backgroundImage.complete) {
+        gameLoop();
+      }
+    }
+
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'initialize') {
+        startGame(event.data.gameData);
+      } else if (event.data.type === 'game_input') {
+        handleInput(event.data.input);
+      }
+    });
+
+    setTimeout(() => {
+      if (gameStartTime === 0) {
+        console.log("No initialize message received. Auto-starting game.");
+        startGame({});
+      }
+    }, 2000);
+
+    function handleInput(input) {
+      switch (input) {
+        case 'w': case 'ArrowUp':
+          if (player.y > 0) player.y--;
+          break;
+        case 's': case 'ArrowDown':
+          if (player.y < rows - 1) player.y++;
+          break;
+        case 'a': case 'ArrowLeft':
+          if (player.x > 0) {
+            player.x--;
+            lastPlayerDirection = 'left';
+          }
+          break;
+        case 'd': case 'ArrowRight':
+          if (player.x < cols - 1) {
+            player.x++;
+            lastPlayerDirection = 'right';
+          }
+          break;
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      switch (key) {
+        case 'w':
+        case 'arrowup':
+          handleInput('w');
+          break;
+        case 'a':
+        case 'arrowleft':
+          handleInput('a');
+          break;
+        case 's':
+        case 'arrowdown':
+          handleInput('s');
+          break;
+        case 'd':
+        case 'arrowright':
+          handleInput('d');
+          break;
+      }
+    });
+  </script>
+ </body>
+</html>

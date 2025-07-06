@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dust Battle</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #000;
+      border: 2px solid #00ff00;
+    }
+    #loading {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">Initializing Dust Battle...</div>
+  <canvas id="gameCanvas" width="800" height="400" style="display:none;"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const loadingDiv = document.getElementById('loading');
+
+    const catSprite = new Image();
+    const monsterSprite = new Image();
+    const backgroundImage = new Image();
+    const slowBossImg = new Image();
+    const clearDustballsImg = new Image();
+    const pushBossImg = new Image();
+
+    catSprite.src = '../images/A_pixel_art_depiction_of_an_orange_tabby_cat_is_se.png';
+    monsterSprite.src = '../images/monster_sprite_transparent.png';
+    backgroundImage.src = '../images/A_pixel_art_image_depicting_a_dimly_lit_storage_ro.png';
+    slowBossImg.src = '../images/hamster.png';
+    clearDustballsImg.src = '../images/bird.png';
+    pushBossImg.src = '../images/dog.png';
+
+    let gameInitialized = false;
+    let animationId;
+    let gameStartTime;
+
+    const cat = { x: 100, y: canvas.height - 100, width: 80, height: 80, speed: 5 };
+    const monster = { x: 650, y: 0, width: 160, height: 160, hitPoints: 10, dx: -2 };
+    const bubbles = [];
+    const dustballs = [];
+    const powerups = [];
+    const powerupTypes = ['slowBoss', 'clearDustballs', 'pushBoss'];
+
+    function shootBubble() {
+      bubbles.push({ x: cat.x + cat.width / 2 - 5, y: cat.y, width: 10, height: 10, speed: 7, color: '#00ffff' });
+    }
+
+    function spawnDustball() {
+      const angle = (Math.random() * Math.PI / 2) - (Math.PI / 4);
+      const speed = 3 + Math.random() * 2;
+      dustballs.push({ x: Math.random() * (canvas.width - 30), y: -30, width: 30, height: 30, color: '#ffff00', speedX: speed * Math.sin(angle), speedY: speed * Math.cos(angle) });
+    }
+
+    function spawnPowerup() {
+      const type = powerupTypes[Math.floor(Math.random() * powerupTypes.length)];
+      powerups.push({ x: Math.random() * (canvas.width - 30), y: -30, width: 30, height: 30, type, speedY: 2 });
+    }
+
+    function activatePowerup(type) {
+      if (type === 'slowBoss') {
+        monster.dx *= 0.3;
+        setTimeout(() => { monster.dx = monster.dx < 0 ? -2 : 2; }, 5000);
+      } else if (type === 'clearDustballs') {
+        dustballs.length = 0;
+      } else if (type === 'pushBoss') {
+        monster.y = 0;
+      }
+    }
+
+    function handleInput(input) {
+      if (!gameInitialized) return;
+      switch (input) {
+        case 'a': cat.x -= cat.speed; break;
+        case 'd': cat.x += cat.speed; break;
+        case 'space': shootBubble(); break;
+      }
+      cat.x = Math.max(0, Math.min(canvas.width - cat.width, cat.x));
+    }
+
+    function update() {
+      monster.x += monster.dx;
+      let touchedWall = false;
+      if (monster.x <= 0 || monster.x + monster.width >= canvas.width) {
+        monster.dx *= -1;
+        touchedWall = true;
+      }
+      if (touchedWall) monster.y += 20;
+
+      if (monster.x < cat.x + cat.width && monster.x + monster.width > cat.x && monster.y < cat.y + cat.height && monster.y + monster.height > cat.y) {
+        failGame('monster_collision');
+        return;
+      }
+
+      bubbles.forEach(b => b.y -= b.speed);
+      dustballs.forEach(d => { d.x += d.speedX; d.y += d.speedY; });
+
+      powerups.forEach((p, index) => {
+        p.y += p.speedY;
+        if (p.x < cat.x + cat.width && p.x + p.width > cat.x && p.y < cat.y + cat.height && p.y + p.height > cat.y) {
+          activatePowerup(p.type);
+          powerups.splice(index, 1);
+        }
+      });
+
+      bubbles.forEach((b, bi) => {
+        if (b.x < monster.x + monster.width && b.x + b.width > monster.x && b.y < monster.y + monster.height && b.y + b.height > monster.y) {
+          monster.hitPoints--;
+          bubbles.splice(bi, 1);
+        }
+      });
+
+      dustballs.forEach((d, di) => {
+        if (d.x < cat.x + cat.width && d.x + d.width > cat.x && d.y < cat.y + cat.height && d.y + d.height > cat.y) {
+          failGame('dustball_hit');
+        }
+      });
+    }
+
+    function drawRect(obj) {
+      ctx.fillStyle = obj.color;
+      ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(catSprite, cat.x, cat.y, cat.width, cat.height);
+      ctx.drawImage(monsterSprite, monster.x, monster.y, monster.width, monster.height);
+      bubbles.forEach(b => drawRect(b));
+      dustballs.forEach(d => drawRect(d));
+
+      powerups.forEach(p => {
+        let img;
+        if (p.type === 'slowBoss') img = slowBossImg;
+        else if (p.type === 'clearDustballs') img = clearDustballsImg;
+        else if (p.type === 'pushBoss') img = pushBossImg;
+        if (img) ctx.drawImage(img, p.x, p.y, p.width, p.height);
+      });
+
+      ctx.fillStyle = '#00ff00';
+      ctx.font = '16px Courier New';
+      ctx.fillText(`Dust Bunny HP: ${monster.hitPoints}`, 10, 20);
+
+      if (monster.hitPoints <= 0) {
+        completeGame();
+        return;
+      }
+
+      update();
+      animationId = requestAnimationFrame(draw);
+    }
+
+    function startGame() {
+      loadingDiv.style.display = 'none';
+      canvas.style.display = 'block';
+      gameInitialized = true;
+      gameStartTime = Date.now();
+      setInterval(spawnDustball, 700);
+      setInterval(spawnPowerup, 8000);
+      parent.postMessage({ type: 'game_event', event: 'started', data: { message: 'Dust Battle started' } }, '*');
+      draw();
+    }
+
+    function completeGame() {
+      cancelAnimationFrame(animationId);
+      parent.postMessage({ type: 'game_completed', data: { success: true, score: 100, completionTime: Date.now() - gameStartTime } }, '*');
+    }
+
+    function failGame(reason) {
+      cancelAnimationFrame(animationId);
+      parent.postMessage({ type: 'game_failed', data: { success: false, reason } }, '*');
+    }
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.type === 'initialize') startGame();
+      else if (msg.type === 'game_input') handleInput(msg.input);
+    });
+  </script>
+</body>
+</html>

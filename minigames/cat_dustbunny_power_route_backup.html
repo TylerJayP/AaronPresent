@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cat vs Dust Bunny</title>
+  <style>
+    canvas {
+      background: #000;
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background music -->
+  <audio id="bgMusic" src="80s_style_music.mp3" loop autoplay></audio>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const catSprite = new Image();
+    catSprite.src = '../images/A_pixel_art_depiction_of_an_orange_tabby_cat_is_se.png';
+    const monsterSprite = new Image();
+    monsterSprite.src = '../images/monster_sprite_transparent.png';
+    const backgroundImage = new Image();
+    backgroundImage.src = '../images/A_pixel_art_image_depicting_a_dimly_lit_storage_ro.png';
+
+    const cat = {
+      x: 100,
+      y: canvas.height - 100,
+      width: 80,
+      height: 80,
+      speed: 5,
+      dx: 3
+    };
+
+    const keys = {};
+    const bubbles = [];
+    const dustballs = [];
+
+    const monster = {
+      x: 650,
+      y: 0,
+      width: 160,
+      height: 160,
+      hitPoints: 10,
+      dx: -2
+    };
+
+    document.addEventListener('keydown', (e) => keys[e.key] = true);
+    document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    let lastBubbleTime = 0;
+
+    function shootBubble() {
+      const now = Date.now();
+      if (now - lastBubbleTime < 375) return; // Doubled firing rate
+      lastBubbleTime = now;
+
+      bubbles.push({
+        x: cat.x + cat.width / 2 - 5,
+        y: cat.y,
+        width: 10,
+        height: 10,
+        speed: 7,
+        color: 'lightblue'
+      });
+    }
+
+    function spawnDustball() {
+      const angle = (Math.random() * Math.PI / 2) - (Math.PI / 4);
+      const speed = 3 + Math.random() * 2;
+      dustballs.push({
+        x: Math.random() * (canvas.width - 30),
+        y: -30,
+        width: 30,
+        height: 30,
+        color: 'brown',
+        speedX: speed * Math.sin(angle),
+        speedY: speed * Math.cos(angle)
+      });
+    }
+
+    setInterval(spawnDustball, 700);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ') shootBubble();
+    });
+
+    function update() {
+      if (keys['ArrowLeft'] || keys['a']) cat.x -= cat.speed;
+      if (keys['ArrowRight'] || keys['d']) cat.x += cat.speed;
+
+      cat.x = Math.max(0, Math.min(canvas.width - cat.width, cat.x));
+
+      monster.x += monster.dx;
+      let touchedWall = false;
+
+      if (monster.x <= 0) {
+        monster.x = 0;
+        monster.dx = Math.abs(monster.dx) + (Math.random() * 2);
+        touchedWall = true;
+      } else if (monster.x + monster.width >= canvas.width) {
+        monster.x = canvas.width - monster.width;
+        monster.dx = -Math.abs(monster.dx) + (Math.random() * -2);
+        touchedWall = true;
+      }
+
+      if (touchedWall) {
+        monster.y += 20;
+      }
+
+      if (
+        monster.x < cat.x + cat.width &&
+        monster.x + monster.width > cat.x &&
+        monster.y < cat.y + cat.height &&
+        monster.y + monster.height > cat.y
+      ) {
+        alert("Game Over! The monster caught the cat.");
+        document.location.reload();
+      }
+
+      bubbles.forEach(b => b.y -= b.speed);
+      dustballs.forEach(d => {
+        d.x += d.speedX;
+        d.y += d.speedY;
+      });
+
+      bubbles.forEach((b, bi) => {
+        if (
+          b.x < monster.x + monster.width &&
+          b.x + b.width > monster.x &&
+          b.y < monster.y + monster.height &&
+          b.y + b.height > monster.y
+        ) {
+          monster.hitPoints -= 2; // Double damage
+          monster.width *= 0.95;
+          monster.height *= 0.95;
+          monster.dx *= 1.1;
+          bubbles.splice(bi, 1);
+        }
+      });
+
+      dustballs.forEach((d, di) => {
+        if (
+          d.x < cat.x + cat.width &&
+          d.x + d.width > cat.x &&
+          d.y < cat.y + cat.height &&
+          d.y + d.height > cat.y
+        ) {
+          alert("Game Over! Cat hit by a dustball.");
+          document.location.reload();
+        }
+      });
+    }
+
+    function drawRect(obj) {
+      ctx.fillStyle = obj.color;
+      ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+
+      ctx.drawImage(catSprite, cat.x, cat.y, cat.width, cat.height);
+      ctx.drawImage(monsterSprite, monster.x, monster.y, monster.width, monster.height);
+
+      bubbles.forEach(b => drawRect(b));
+      dustballs.forEach(d => drawRect(d));
+
+      ctx.fillStyle = 'black';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Dust Bunny HP: ${monster.hitPoints}`, 10, 20);
+
+      if (monster.hitPoints <= 0) {
+        ctx.fillText("You defeated the Dust Bunny!", 300, 300);
+        cancelAnimationFrame(animationId);
+        return;
+      }
+
+      update();
+      animationId = requestAnimationFrame(draw);
+    }
+
+    let animationId = requestAnimationFrame(draw);
+  </script>
+</body>
+</html>
