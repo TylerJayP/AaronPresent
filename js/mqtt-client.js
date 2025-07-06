@@ -1,13 +1,14 @@
-// MQTT Client for Whiskers Presenter App
+// Complete MQTT Client for Presenter App - Fixed timing issues
 class MQTTClient {
     constructor(app) {
         this.app = app;
         this.client = null;
         this.connected = false;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 10;
-        this.reconnectTimer = null;
         this.messageQueue = [];
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectDelay = 3000;
+        this.connectionOptions = null;
         this.initialized = false;
     }
 
@@ -15,99 +16,128 @@ class MQTTClient {
         try {
             console.log('📡 Initializing MQTT Client...');
 
-            // Check if mqtt.js is available
-            if (typeof mqtt === 'undefined') {
-                throw new Error('MQTT.js library not found. Please check if the library is loaded correctly.');
-            }
+            // Wait for MQTT.js library to be loaded
+            await this.waitForMQTTLibrary();
 
-            // Generate unique client ID
-            this.clientId = `${CONFIG.MQTT.CLIENT_ID_PREFIX}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            // Set up connection options
+            this.setupConnectionOptions();
 
-            // Set up connection options with improved settings
-            this.connectionOptions = {
-                clientId: this.clientId,
-                keepalive: CONFIG.MQTT.KEEP_ALIVE,
-                clean: CONFIG.MQTT.CLEAN_SESSION,
-                connectTimeout: CONFIG.MQTT.CONNECT_TIMEOUT,
-                reconnectPeriod: 0, // We'll handle reconnection manually
-                rejectUnauthorized: false, // Allow self-signed certificates for public brokers
-                protocolVersion: 4, // Use MQTT 3.1.1 for better compatibility
-                // Add username/password if needed (not required for public broker)
-                // username: '',
-                // password: ''
-            };
-
-            console.log(`📡 Generated Client ID: ${this.clientId}`);
-
-            // Start connection attempt
             this.initialized = true;
             console.log('✅ MQTT Client initialized - starting connection...');
 
-            // Start connection in background (don't block initialization)
-            this.connect().then(() => {
-                console.log('✅ MQTT connection completed successfully');
-            }).catch(error => {
-                console.warn('⚠️ MQTT connection failed, continuing without MQTT:', error);
-                this.handleConnectionError(error);
-            });
+            // Start connection
+            await this.connect();
 
         } catch (error) {
             console.error('❌ Failed to initialize MQTT Client:', error);
-            // Don't throw - app should work without MQTT in development mode
-            if (CONFIG.DEVELOPMENT_MODE) {
-                console.log('📡 Continuing without MQTT in development mode');
-                this.initialized = true; // Still mark as initialized
-            } else {
-                throw error;
-            }
+            this.app.handleError('mqtt_init', error);
         }
     }
 
-    async loadMQTTLibrary() {
-        // This method is no longer needed since we load MQTT.js directly in HTML
-        console.log('📡 MQTT.js library already loaded');
-        return Promise.resolve();
+    async waitForMQTTLibrary() {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('MQTT.js library failed to load'));
+            }, 10000);
+
+            const checkMQTT = () => {
+                if (typeof mqtt !== 'undefined') {
+                    clearTimeout(timeout);
+                    console.log('✅ MQTT.js library confirmed available');
+                    resolve();
+                } else {
+                    setTimeout(checkMQTT, 100);
+                }
+            };
+
+            checkMQTT();
+        });
+    }
+
+    setupConnectionOptions() {
+        const clientId = `${CONFIG.MQTT.CLIENT_ID_PREFIX}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        console.log('📡 Generated Client ID:', clientId);
+
+        this.connectionOptions = {
+            clientId: clientId,
+            keepalive: CONFIG.MQTT.KEEP_ALIVE || 30,
+            clean: CONFIG.MQTT.CLEAN_SESSION !== false,
+            connectTimeout: CONFIG.MQTT.CONNECT_TIMEOUT || 15000,
+            reconnectPeriod: 0, // We handle reconnection manually
+            will: {
+                topic: CONFIG.TOPICS.PUBLISH,
+                payload: JSON.stringify({
+                    type: 'presenter_disconnected',
+                    clientId: clientId,
+                    timestamp: new Date().toISOString()
+                }),
+                qos: 0,
+                retain: false
+            }
+        };
+
+        console.log('📡 Connection options:', this.connectionOptions);
     }
 
     async connect() {
         try {
-            // Build broker URL with correct path
-            const protocol = CONFIG.MQTT.USE_SSL ? 'wss' : 'ws';
-            const port = CONFIG.MQTT.USE_SSL ? CONFIG.MQTT.SECURE_PORT : CONFIG.MQTT.PORT;
-            const brokerUrl = `${protocol}://${CONFIG.MQTT.BROKER}:${port}/mqtt`;  // Added /mqtt path
-
-            console.log(`📡 Connecting to MQTT broker: ${brokerUrl}`);
-            console.log(`📡 Client ID: ${this.clientId}`);
+            const brokerUrl = this.buildBrokerUrl(CONFIG.MQTT.PRIMARY_BROKER);
+            console.log('📡 Connecting to MQTT broker:', brokerUrl);
+            console.log('📡 Client ID:', this.connectionOptions.clientId);
             console.log('📡 Connection options:', this.connectionOptions);
 
-            // Clean up any existing connection
+            await this.attemptConnection(brokerUrl);
+            
+        } catch (error) {
+            console.error('📡 Primary broker connection failed:', error);
+            
+            // Try fallback broker if available
+            if (CONFIG.MQTT.FALLBACK_BROKER && CONFIG.MQTT.FALLBACK_BROKER !== CONFIG.MQTT.PRIMARY_BROKER) {
+                try {
+                    const fallbackUrl = this.buildBrokerUrl(CONFIG.MQTT.FALLBACK_BROKER);
+                    console.log('📡 Trying fallback broker:', fallbackUrl);
+                    await this.attemptConnection(fallbackUrl);
+                } catch (fallbackError) {
+                    console.error('📡 Fallback broker also failed:', fallbackError);
+                    this.handleConnectionError(fallbackError);
+                }
+            } else {
+                this.handleConnectionError(error);
+            }
+        }
+    }
+
+    buildBrokerUrl(broker) {
+        const port = CONFIG.MQTT.USE_SSL ? CONFIG.MQTT.SECURE_PORT : CONFIG.MQTT.PORT;
+        const protocol = CONFIG.MQTT.USE_SSL ? 'wss' : 'ws';
+        return `${protocol}://${broker}:${port}/mqtt`;
+    }
+
+    async attemptConnection(brokerUrl) {
+        return new Promise((resolve, reject) => {
             if (this.client) {
-                console.log('📡 Cleaning up existing connection...');
                 this.client.end(true);
                 this.client = null;
             }
 
-            // Create MQTT client
             this.client = mqtt.connect(brokerUrl, this.connectionOptions);
-
-            // Set up event handlers
             this.setupEventHandlers();
 
-            // Wait for connection with timeout
-            try {
-                await this.waitForConnection();
-                console.log('✅ MQTT connection established successfully');
-            } catch (connectionError) {
-                console.error('❌ Connection failed:', connectionError);
-                throw connectionError;
-            }
+            const timeout = setTimeout(() => {
+                reject(new Error(`Connection timeout to ${brokerUrl}`));
+            }, CONFIG.MQTT.CONNECT_TIMEOUT);
 
-        } catch (error) {
-            console.error('📡 Failed to connect to MQTT broker:', error);
-            this.handleConnectionError(error);
-            // Re-throw so caller knows connection failed
-            throw error;
-        }
+            this.client.once('connect', () => {
+                clearTimeout(timeout);
+                resolve();
+            });
+
+            this.client.once('error', (error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+        });
     }
 
     setupEventHandlers() {
@@ -115,23 +145,20 @@ class MQTTClient {
             console.log('📡 Connected to MQTT broker successfully!');
             this.connected = true;
             this.reconnectAttempts = 0;
+            this.app.gameState.connected = true;
 
-            // Update UI connection status
+            // Update UI
             if (this.app.modules.ui) {
                 this.app.modules.ui.updateConnectionStatus(true);
             }
 
-            // Subscribe to topics
+            // Subscribe to topic
             this.subscribe();
 
-            // Send queued messages
+            // Send any queued messages (including app_ready)
             this.sendQueuedMessages();
 
-            // Notify app of connection
-            this.app.gameState.mqttStatus.connected = true;
-            this.app.gameState.mqttStatus.lastMessage = null;
-
-            console.log('📡 MQTT setup completed - ready for messages');
+            this.app.log('MQTT connected successfully', 'system');
         });
 
         this.client.on('message', (topic, message) => {
@@ -140,80 +167,37 @@ class MQTTClient {
 
         this.client.on('error', (error) => {
             console.error('📡 MQTT Error:', error);
-            console.error('📡 Error details:', {
-                code: error.code,
-                message: error.message,
-                stack: error.stack
-            });
             this.handleConnectionError(error);
         });
 
         this.client.on('close', () => {
             console.log('📡 MQTT connection closed');
             this.connected = false;
+            this.app.gameState.connected = false;
             if (this.app.modules.ui) {
                 this.app.modules.ui.updateConnectionStatus(false);
             }
-            this.app.gameState.mqttStatus.connected = false;
-
-            // Attempt reconnection
             this.scheduleReconnect();
         });
 
         this.client.on('offline', () => {
             console.log('📡 MQTT client offline');
             this.connected = false;
+            this.app.gameState.connected = false;
             if (this.app.modules.ui) {
                 this.app.modules.ui.updateConnectionStatus(false);
             }
         });
 
-        this.client.on('reconnect', () => {
-            console.log('📡 MQTT attempting to reconnect...');
-        });
-
-        this.client.on('disconnect', (packet) => {
-            console.log('📡 MQTT disconnected:', packet);
-            this.connected = false;
-        });
-
         console.log('📡 MQTT event handlers set up');
-    }
 
-    async waitForConnection() {
-        return new Promise((resolve, reject) => {
-            console.log(`📡 Waiting for connection (timeout: ${CONFIG.MQTT.CONNECT_TIMEOUT}ms)...`);
-
-            const timeout = setTimeout(() => {
-                console.error('📡 Connection timeout exceeded');
-                reject(new Error(`Connection timeout after ${CONFIG.MQTT.CONNECT_TIMEOUT}ms`));
-            }, CONFIG.MQTT.CONNECT_TIMEOUT);
-
-            const onConnect = () => {
+        // Set up connection timeout
+        console.log(`📡 Waiting for connection (timeout: ${CONFIG.MQTT.CONNECT_TIMEOUT}ms)...`);
+        setTimeout(() => {
+            if (!this.connected) {
                 console.log('📡 Connection established!');
-                clearTimeout(timeout);
-                this.client.removeListener('error', onError);
-                resolve();
-            };
-
-            const onError = (error) => {
-                console.error('📡 Connection error during wait:', error);
-                clearTimeout(timeout);
-                this.client.removeListener('connect', onConnect);
-                reject(error);
-            };
-
-            // Check if already connected
-            if (this.client.connected) {
-                console.log('📡 Already connected!');
-                clearTimeout(timeout);
-                resolve();
-                return;
             }
-
-            this.client.once('connect', onConnect);
-            this.client.once('error', onError);
-        });
+        }, 1000);
     }
 
     subscribe() {
@@ -223,8 +207,11 @@ class MQTTClient {
         this.client.subscribe(topic, (error) => {
             if (error) {
                 console.error(`📡 Failed to subscribe to ${topic}:`, error);
+                this.app.log(`Failed to subscribe: ${error.message}`, 'error');
             } else {
                 console.log(`📡 Successfully subscribed to ${topic}`);
+                console.log('📡 MQTT setup completed - ready for messages');
+                this.app.log(`Subscribed to: ${topic}`, 'success');
             }
         });
     }
@@ -234,35 +221,35 @@ class MQTTClient {
             const messageStr = message.toString();
             console.log(`📡 Received message on ${topic}:`, messageStr);
 
-            // Parse JSON message
             let parsedMessage;
             try {
                 parsedMessage = JSON.parse(messageStr);
             } catch (error) {
                 console.error('📡 Failed to parse JSON message:', error);
+                this.app.log('Received invalid JSON message', 'error');
                 return;
             }
 
             // Validate message structure
             if (!this.validateMessage(parsedMessage)) {
                 console.error('📡 Invalid message structure:', parsedMessage);
+                this.app.log('Received invalid message structure', 'error');
                 return;
             }
 
-            // Forward to app for handling
+            // Forward to app
             this.app.handleMQTTMessage(parsedMessage);
 
         } catch (error) {
             console.error('📡 Error handling message:', error);
-            this.app.handleError('mqtt_message_handling', error);
+            this.app.log(`Message handling error: ${error.message}`, 'error');
         }
     }
 
     validateMessage(message) {
-        // Basic validation - must have type and timestamp
         return message &&
-            typeof message.type === 'string' &&
-            typeof message.timestamp === 'string';
+               typeof message.type === 'string' &&
+               typeof message.timestamp === 'string';
     }
 
     publish(message) {
@@ -286,13 +273,13 @@ class MQTTClient {
             this.client.publish(topic, messageStr, (error) => {
                 if (error) {
                     console.error('📡 Failed to publish message:', error);
-                    this.app.handleError('mqtt_publish', error);
+                    this.app.log(`Publish failed: ${error.message}`, 'error');
                 }
             });
 
         } catch (error) {
             console.error('📡 Error publishing message:', error);
-            this.app.handleError('mqtt_publish', error);
+            this.app.log(`Publish error: ${error.message}`, 'error');
         }
     }
 
@@ -310,89 +297,58 @@ class MQTTClient {
     handleConnectionError(error) {
         console.error('📡 Connection error:', error);
         this.connected = false;
-        this.app.modules.ui.updateConnectionStatus(false);
-        this.app.gameState.mqttStatus.connected = false;
-
-        // Schedule reconnection attempt
+        this.app.gameState.connected = false;
+        if (this.app.modules.ui) {
+            this.app.modules.ui.updateConnectionStatus(false);
+        }
+        this.app.log(`Connection error: ${error.message}`, 'error');
         this.scheduleReconnect();
     }
 
     scheduleReconnect() {
-        if (this.reconnectTimer) return; // Already scheduled
-
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
             console.error('📡 Max reconnection attempts reached');
-            this.app.handleError('mqtt_max_reconnects',
-                new Error('Maximum MQTT reconnection attempts exceeded'));
+            this.app.log('Max reconnection attempts reached', 'error');
             return;
         }
 
-        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Exponential backoff
-        console.log(`📡 Scheduling reconnection in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
+        this.reconnectAttempts++;
+        console.log(`📡 Scheduling reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${this.reconnectDelay}ms`);
 
-        this.reconnectTimer = setTimeout(async () => {
-            this.reconnectTimer = null;
-            this.reconnectAttempts++;
-
-            try {
-                await this.connect();
-            } catch (error) {
-                console.error('📡 Reconnection failed:', error);
-                // Will trigger another reconnection attempt via error handler
+        setTimeout(() => {
+            if (!this.connected) {
+                this.connect();
             }
-        }, delay);
+        }, this.reconnectDelay);
+
+        // Exponential backoff
+        this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 30000);
     }
 
-    disconnect() {
-        console.log('📡 Disconnecting from MQTT broker');
-
-        if (this.reconnectTimer) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = null;
-        }
-
-        if (this.client && this.connected) {
-            this.client.end();
-        }
-
-        this.connected = false;
-        this.app.modules.ui.updateConnectionStatus(false);
-        this.app.gameState.mqttStatus.connected = false;
-    }
-
-    // Development/Testing Methods
-    simulateMessage(messageType, data = {}) {
-        if (!CONFIG.DEVELOPMENT_MODE) {
-            console.warn('📡 Message simulation only available in development mode');
-            return;
-        }
-
-        const simulatedMessage = {
-            type: messageType,
-            timestamp: new Date().toISOString(),
-            ...data
-        };
-
-        console.log('📡 [DEV] Simulating MQTT message:', simulatedMessage);
-        this.app.handleMQTTMessage(simulatedMessage);
-    }
-
-    getConnectionStats() {
-        return {
-            connected: this.connected,
-            clientId: this.clientId,
-            reconnectAttempts: this.reconnectAttempts,
-            queuedMessages: this.messageQueue.length,
-            brokerUrl: `${CONFIG.MQTT.USE_SSL ? 'wss' : 'ws'}://${CONFIG.MQTT.BROKER}:${CONFIG.MQTT.USE_SSL ? CONFIG.MQTT.SECURE_PORT : CONFIG.MQTT.PORT}/mqtt`
-        };
-    }
-
-    // Getters
     isConnected() {
         return this.connected;
     }
 
-    isInitialized() {
-        return this.initialized;
+    disconnect() {
+        if (this.client) {
+            this.client.end();
+            this.client = null;
+        }
+        this.connected = false;
+        this.app.gameState.connected = false;
     }
-} 
+
+    getConnectionStatus() {
+        return {
+            connected: this.connected,
+            reconnectAttempts: this.reconnectAttempts,
+            messageQueueLength: this.messageQueue.length,
+            clientId: this.connectionOptions?.clientId
+        };
+    }
+}
+
+// Export for use in other modules
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = MQTTClient;
+}

@@ -104,18 +104,20 @@
         }
       }
 
-      // --- Input ---
-      document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", (e) => {
   keys[e.key] = true;
-  if (e.key === "a") keys["ArrowLeft"] = true;
-  if (e.key === "d") keys["ArrowRight"] = true;
   if (e.key === "w") keys["ArrowUp"] = true;
+  if (e.key === "a") keys["ArrowLeft"] = true;
+  if (e.key === "s") keys["ArrowDown"] = true;  // You were missing this!
+  if (e.key === "d") keys["ArrowRight"] = true;
 });
-      document.addEventListener("keyup", (e) => {
+
+document.addEventListener("keyup", (e) => {
   keys[e.key] = false;
-  if (e.key === "a") keys["ArrowLeft"] = false;
-  if (e.key === "d") keys["ArrowRight"] = false;
   if (e.key === "w") keys["ArrowUp"] = false;
+  if (e.key === "a") keys["ArrowLeft"] = false;
+  if (e.key === "s") keys["ArrowDown"] = false;  // You were missing this!
+  if (e.key === "d") keys["ArrowRight"] = false;
 });
 
       // --- Shooting ---
