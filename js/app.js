@@ -35,7 +35,7 @@ class WhiskersPresenterApp {
             gameStatus: {
                 isWaitingForInput: true,  // IMPORTANT: Set to true so choices work
                 minigameActive: false,
-                audioPlaying: false,
+                audioPlaying: true,
                 gameEnded: false,
                 currentChoiceIndex: 0,
                 currentChoices: []

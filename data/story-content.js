@@ -1,9 +1,10 @@
 // Story data for "Whiskers and the Bubbles of Justice"
 // Converted from whiskers_cyoa.md
+// FIXED: Chapter IDs now match audio file names exactly
 
 const STORY_DATA = {
     start: {
-        id: 'start',
+        id: 'start',  // → chapter_start_main.mp3 ✓
         title: 'Chapter 1: The Ordinary World',
         text: `In the cozy suburb of Maplewood, there lived an ordinary orange tabby cat named Whiskers. His days were pleasantly predictable: morning naps in sunbeams, afternoon bird-watching from windowsills, and evening belly rubs from his human, Mrs. Henderson. Whiskers was content with his simple life, though he sometimes gazed longingly at the birds outside, wondering what adventures lay beyond his comfortable home.
 
@@ -11,27 +12,27 @@ Mrs. Henderson was particularly fond of her collection of antique soap bubble ma
 
 **Continue to Chapter 2**`,
         choices: [
-            { text: "Continue to Chapter 2", nextChapter: 'chapter2' }
+            { text: "Continue to Chapter 2", nextChapter: '2' }  // Updated reference
         ],
         type: 'story'
     },
 
-    chapter2: {
-        id: 'chapter2',
+    '2': {
+        id: '2',  // → chapter_2_main.mp3 ✓
         title: 'Chapter 2: The Call to Adventure',
         text: `Everything changed on a Tuesday morning when Mrs. Henderson left for her weekly grocery run. As Whiskers settled into his favorite sunny spot, a strange rumbling began beneath the floorboards. The house trembled, dishes rattled, and from the basement came an otherworldly growl that made Whiskers' fur stand on end.
 
 **What does Whiskers do?**`,
         choices: [
-            { text: "Investigate the noise bravely - march straight toward the basement door", nextChapter: 'investigate' },
-            { text: "Hide and observe cautiously - find a safe vantage point to watch", nextChapter: 'hide' },
-            { text: "Panic and zoom around the house", nextChapter: 'panic' }
+            { text: "Investigate the noise bravely - march straight toward the basement door", nextChapter: '2a' },  // Updated reference
+            { text: "Hide and observe cautiously - find a safe vantage point to watch", nextChapter: '2b' },  // Updated reference
+            { text: "Panic and zoom around the house", nextChapter: '2c' }  // Updated reference
         ],
         type: 'story'
     },
 
-    investigate: {
-        id: 'investigate',
+    '2a': {
+        id: '2a',  // → chapter_2a_main.mp3 ✓
         title: 'Chapter 2A: Brave Investigation',
         text: `Whiskers' curiosity overcame his fear. With tail held high and ears forward, he padded directly toward the basement door. "Whatever's down there," he thought, "I'm the protector of this house."
 
@@ -45,14 +46,14 @@ Dustzilla laughed, a sound like static electricity. "Foolish feline! I shall enj
 
 **Continue to Chapter 3A**`,
         choices: [
-            { text: "Continue to Chapter 3A", nextChapter: 'chapter3a' }
+            { text: "Continue to Chapter 3A", nextChapter: '3a' }  // Updated reference
         ],
         type: 'story',
         effects: { courage: 'Brave', health: 110 }
     },
 
-    hide: {
-        id: 'hide',
+    '2b': {
+        id: '2b',  // → chapter_2b_main.mp3 ✓
         title: 'Chapter 2B: Cautious Observation',
         text: `Whiskers' survival instincts kicked in. He quickly but quietly slipped behind the living room curtains, where he had a clear view of the basement door but remained hidden. From this vantage point, he could assess the threat without exposing himself.
 
@@ -68,14 +69,14 @@ From his hiding spot, Whiskers began to formulate a plan. This creature seemed p
 
 **Continue to Chapter 3B**`,
         choices: [
-            { text: "Continue to Chapter 3B", nextChapter: 'chapter3b' }
+            { text: "Continue to Chapter 3B", nextChapter: '3b' }  // Updated reference
         ],
         type: 'story',
         effects: { courage: 'Cautious' }
     },
 
-    panic: {
-        id: 'panic',
+    '2c': {
+        id: '2c',  // → chapter_2c_main.mp3 ✓
         title: 'Chapter 2C: Panic and Bubbles',
         text: `The otherworldly growl sent Whiskers into a complete panic. He leaped straight up in the air, his fur standing on end, and came down running. In his terror, he bounded directly onto the kitchen counter, skidding across the surface and crashing straight into Mrs. Henderson's prized bubble collection.
 
@@ -91,14 +92,14 @@ Whiskers, still in panic mode and now covered in bubble solution, found himself 
 
 **Continue to Chapter 3C**`,
         choices: [
-            { text: "Continue to Chapter 3C", nextChapter: 'chapter3c' }
+            { text: "Continue to Chapter 3C", nextChapter: '3c' }  // Updated reference
         ],
         type: 'story',
         effects: { courage: 'Panicked', discoveredBubbles: true }
     },
 
-    chapter3a: {
-        id: 'chapter3a',
+    '3a': {
+        id: '3a',  // → chapter_3a_main.mp3 ✓
         title: 'Chapter 3A: Direct Confrontation Path',
         text: `Whiskers' brave stance impressed even Dustzilla, who paused in its advance. "You have spirit, little cat. I respect that. Perhaps I'll make your dustification quick and relatively painless."
 
@@ -112,13 +113,13 @@ Dustzilla paused, intrigued by the cat's continued defiance. "Tell me, brave lit
 
 **Continue to Chapter 4 (All paths converge)**`,
         choices: [
-            { text: "Continue to Chapter 4", nextChapter: 'meetMentor' }
+            { text: "Continue to Chapter 4", nextChapter: '4' }  // Updated reference
         ],
         type: 'story'
     },
 
-    chapter3b: {
-        id: 'chapter3b',
+    '3b': {
+        id: '3b',  // → chapter_3b_main.mp3 ✓
         title: 'Chapter 3B: Strategic Planning Path',
         text: `From his hiding spot, Whiskers continued to observe Dustzilla's behavior. The creature seemed to be searching methodically, but it was also... lonely? There was something almost desperate in the way it called out for other living beings.
 
@@ -132,13 +133,13 @@ This gave Whiskers pause. Was this creature actually hostile, or was it just des
 
 **Continue to Chapter 4 (All paths converge)**`,
         choices: [
-            { text: "Continue to Chapter 4", nextChapter: 'meetMentor' }
+            { text: "Continue to Chapter 4", nextChapter: '4' }  // Updated reference
         ],
         type: 'story'
     },
 
-    chapter3c: {
-        id: 'chapter3c',
+    '3c': {
+        id: '3c',  // → chapter_3c_main.mp3 ✓
         title: 'Chapter 3C: Accidental Discovery Path',
         text: `Slipping and sliding around the kitchen in a panic had an unexpected effect. As Whiskers scrambled for traction on the bubble-solution-covered floor, he discovered something amazing: wherever his paws touched while covered in the solution, beautiful cleaning bubbles appeared and began to sparkle with their own inner light.
 
@@ -154,13 +155,13 @@ Dustzilla backed away further. "The prophecy... it cannot be. A feline champion 
 
 **Continue to Chapter 4 (All paths converge)**`,
         choices: [
-            { text: "Continue to Chapter 4", nextChapter: 'meetMentor' }
+            { text: "Continue to Chapter 4", nextChapter: '4' }  // Updated reference
         ],
         type: 'story'
     },
 
-    meetMentor: {
-        id: 'meetMentor',
+    '4': {
+        id: '4',  // → chapter_4_main.mp3 ✓
         title: 'Chapter 4: Meeting the Mentor',
         text: `As the confrontation intensified, something magical happened. A ray of sunlight struck Mrs. Henderson's remaining bubble makers, causing them to glow with an ethereal light.
 
@@ -174,15 +175,15 @@ Dustzilla cowered at the sight of Bubblina. "The ancient enemy! I thought you we
 
 **What is Whiskers' response to Bubblina's offer?**`,
         choices: [
-            { text: "\"I'll do whatever it takes to protect my home!\"", nextChapter: 'acceptPower' },
-            { text: "\"What exactly are these powers? What's the catch?\"", nextChapter: 'questionPower' },
-            { text: "\"I need to try handling this myself first.\"", nextChapter: 'refusePower' }
+            { text: "\"I'll do whatever it takes to protect my home!\"", nextChapter: '4a' },  // Updated reference
+            { text: "\"What exactly are these powers? What's the catch?\"", nextChapter: '4b' },  // Updated reference
+            { text: "\"I need to try handling this myself first.\"", nextChapter: '4c' }  // Updated reference
         ],
         type: 'story'
     },
 
-    acceptPower: {
-        id: 'acceptPower',
+    '4a': {
+        id: '4a',  // → chapter_4a_main.mp3 ✓
         title: 'Chapter 4A: Eager Response',
         text: `"I'll do whatever it takes to protect my home!" Whiskers declared without hesitation. "If you can give me the power to stop this monster, then I accept!"
 
@@ -200,14 +201,14 @@ Whiskers, now glowing with bubble energy, felt ready to take on any challenge.
 
 **Continue to Chapter 5**`,
         choices: [
-            { text: "Continue to Chapter 5", nextChapter: 'crossingThreshold' }
+            { text: "Continue to Chapter 5", nextChapter: '5' }  // Updated reference
         ],
         type: 'story',
         effects: { hasBubblePowers: true, courage: 'Heroic' }
     },
 
-    questionPower: {
-        id: 'questionPower',
+    '4b': {
+        id: '4b',  // → chapter_4b_main.mp3 ✓
         title: 'Chapter 4B: Cautious Response',
         text: `"Wait," Whiskers said, his natural caution taking over. "What exactly are these powers? What's the catch? And why me specifically?"
 
@@ -229,14 +230,14 @@ After a moment of contemplation, Whiskers nodded. "I accept, but I want to under
 
 **Continue to Chapter 5**`,
         choices: [
-            { text: "Continue to Chapter 5", nextChapter: 'crossingThreshold' }
+            { text: "Continue to Chapter 5", nextChapter: '5' }  // Updated reference
         ],
         type: 'story',
         effects: { hasBubblePowers: true, courage: 'Wise' }
     },
 
-    refusePower: {
-        id: 'refusePower',
+    '4c': {
+        id: '4c',  // → chapter_4c_main.mp3 ✓
         title: 'Chapter 4C: Independent Response',
         text: `"I appreciate the offer," Whiskers said carefully, "but I need to try handling this myself first. I can't just accept magical powers without understanding what I'm getting into, or without first trying to solve this problem through my own abilities."
 
@@ -264,14 +265,14 @@ Dustzilla considered this, but then shook its massive form. "No! It's too late f
 
 **Continue to Chapter 5**`,
         choices: [
-            { text: "Continue to Chapter 5", nextChapter: 'crossingThreshold' }
+            { text: "Continue to Chapter 5", nextChapter: '5' }  // Updated reference
         ],
         type: 'story',
         effects: { hasBubblePowers: true, courage: 'Diplomatic' }
     },
 
     crossingThreshold: {
-        id: 'crossingThreshold',
+        id: '5',  // → chapter_5_main.mp3 ✓
         title: 'Chapter 5: Crossing the Threshold',
         text: `With his new bubble powers flowing through him, Whiskers felt a confidence he'd never experienced before. His first test came immediately as Dustzilla, regardless of its initial reaction, now saw him as a real threat.
 
@@ -287,13 +288,13 @@ Whiskers watched it go, knowing that this was just the beginning. The real adven
 
 **Continue to Chapter 6**`,
         choices: [
-            { text: "Continue to Chapter 6", nextChapter: 'chapter6' }
+            { text: "Continue to Chapter 6", nextChapter: '6' }  // Updated reference
         ],
         type: 'story'
     },
 
-    chapter6: {
-        id: 'chapter6',
+    '6': {
+        id: '6',  // → chapter_6_main.mp3 ✓
         title: 'Chapter 6: Tests, Allies, and Enemies',
         text: `As Dustzilla's influence spread throughout the neighborhood, Whiskers faced his first major strategic decision as a guardian. The dust monster was gathering allies from every unkempt corner of Maplewood—dust bunnies from under beds, lint from dryer vents, cobwebs from forgotten attics, and even some of the more rebellious autumn leaves that had never been raked.
 
@@ -308,8 +309,8 @@ Whiskers needed to respond, but how?
         type: 'story'
     },
 
-    alliancePath: {
-        id: 'alliancePath',
+    '6a': {
+        id: '6a',  // → chapter_6a_main.mp3 ✓
         title: 'Chapter 6A: Alliance Building Path',
         text: `Whiskers decided that he couldn't face this threat alone. If Dustzilla was building an army, then he needed one too. He set out to rally the animals of Maplewood, starting with those he knew best.
 
@@ -335,7 +336,7 @@ Within a few hours, Whiskers had assembled an impressive coalition: Squeaky as h
 
 **Continue to Chapter 7A**`,
         choices: [
-            { text: "Continue to Chapter 7A", nextChapter: 'chapter7a' }
+            { text: "Continue to Chapter 7A", nextChapter: '7a' }  // Updated reference
         ],
         type: 'story',
         effects: { hasTeam: true, leadership: 'collaborative' }
@@ -348,7 +349,7 @@ Within a few hours, Whiskers had assembled an impressive coalition: Squeaky as h
         file: 'friend_route_frogger',
         text: 'Friend Route',
         choices: [
-            { text: "Venture forth with your allies.", nextChapter: 'alliancePath' }
+            { text: "Venture forth with your allies.", nextChapter: '6a' }  // Updated reference
         ],
         effects: { hasTeam: true, leadership: 'collaborative' }
     },
@@ -360,15 +361,15 @@ Within a few hours, Whiskers had assembled an impressive coalition: Squeaky as h
         file: 'post_chapter_6',
         text: 'Power Route',
                 choices: [
-            { text: "Accept the challenge and prove your mastery", nextChapter: 'powerPath' }
+            { text: "Accept the challenge and prove your mastery", nextChapter: '6b' }  // Updated reference
         ],
         type: 'minigame',
         minigameId: 'post_chapter_6',
         effects: { powerLevel: 'master', isolation: true }
     },
 
-    powerPath: {
-        id: 'powerPath',
+    '6b': {
+        id: '6b',  // → chapter_6b_main.mp3 ✓
         title: 'Chapter 6B: Power Development Path',
         text: `Whiskers decided that raw power would be his best defense. If he could master the full potential of the Bubbles of Justice, he might be able to handle Dustzilla's growing army single-handedly.
 
@@ -388,7 +389,7 @@ Bubblina appeared before him as twilight settled over Maplewood. "Your technical
 
 **Power Development Challenge**`,
         choices: [
-            { text: "Accept the challenge and prove your mastery", nextChapter: 'chapter7b' }
+            { text: "Accept the challenge and prove your mastery", nextChapter: '7b' }  // Updated reference
         ],
         type: 'story',
         minigameId: 'post_chapter_6',
@@ -401,13 +402,13 @@ Bubblina appeared before him as twilight settled over Maplewood. "Your technical
         file: 'aggressive_route_frogger',
         text: 'Agressive Route',
         choices: [
-            { text: "Venture forth with your allies.", nextChapter: 'aggressivePath' }
+            { text: "Venture forth with your allies.", nextChapter: '6c' }  // Updated reference
         ],
         effects: {  militancy: 'high', enemyDesperation: 'extreme' }
     },
 
-    aggressivePath: {
-        id: 'aggressivePath',
+    '6c': {
+        id: '6c',  // → chapter_6c_main.mp3 ✓
         title: 'Chapter 6C: Direct Aggressive Path',
         text: `Whiskers decided that the best defense was a strong offense. Instead of waiting for Dustzilla to grow stronger, he would hunt down the dust monster and its allies, eliminating the threat before it could spread further.
 
@@ -427,17 +428,15 @@ His aggressive tactics did succeed in keeping Dustzilla's forces scattered and d
 
 **Continue to Chapter 7C**`,
         choices: [
-            { text: "Continue to Chapter 7C", nextChapter: 'chapter7c' }
+            { text: "Continue to Chapter 7C", nextChapter: '7c' }  // Updated reference
         ],
         type: 'story',
         effects: { militancy: 'high', enemyDesperation: 'extreme' }
     },
 
-
-
     // --- CHAPTER 7 PATHS ---
-    chapter7a: {
-        id: 'chapter7a',
+    '7a': {
+        id: '7a',  // → chapter_7a_main.mp3 ✓
         title: 'Chapter 7A: Alliance Approach to the Cave',
         text: `With his animal coalition supporting him, Whiskers felt ready to take the fight directly to Dustzilla's stronghold. The dust monster had claimed the basement of the old abandoned house at the end of Maple Street—a perfect lair for a creature of neglect and decay.
 
@@ -457,7 +456,7 @@ The birds confirmed additional dangers from above, spotting movement in the shad
 
 **Continue to Chapter 8A**`,
         choices: [
-            { text: "Continue to Chapter 8A", nextChapter: 'catDustChallenge' }
+            { text: "Continue to Chapter 8A", nextChapter: '8a' }  // Updated reference
         ],
         type: 'story'
     },
@@ -467,15 +466,15 @@ The birds confirmed additional dangers from above, spotting movement in the shad
         title: 'Chapter 7AGame: Friendship Path',
         text: 'Whiskers stands at the threshold of the dusty hallway. Swirling dust bunnies block the way, daring him to dodge and leap with feline finesse. This is no ordinary passage—this is a test of agility, a game of reflexes. Are you ready?',
         choices: [
-            { text: "Accept the challenge and prove your mastery", nextChapter: 'chapter8a' }
+            { text: "Accept the challenge and prove your mastery", nextChapter: '8a' }  // Updated reference
         ],
         type: 'minigame',
         minigameId: 'cat_vs_dust_bunny',
         effects: { powerLevel: 'master', isolation: true }
     },
 
-    chapter7b: {
-        id: 'chapter7b',
+    '7b': {
+        id: '7b',  // → chapter_7b_main.mp3 ✓
         title: 'Chapter 7B: Power Approach to the Cave',
         text: `Whiskers approached Dustzilla's lair with confidence in his abilities but without backup. His intensive training had made him incredibly powerful, but it had also isolated him from potential allies.
 
@@ -503,15 +502,15 @@ Whiskers paused, sensing something important in those words, but his focus on in
         title: 'Chapter 7BGame: Power Path',
         text: 'Whiskers stands at the threshold of the dusty hallway. Swirling dust bunnies block the way, daring him to dodge and leap with feline finesse. This is no ordinary passage—this is a test of agility, a game of reflexes. Are you ready?',
         choices: [
-            { text: "Accept the challenge and prove your mastery", nextChapter: 'chapter8b' }
+            { text: "Accept the challenge and prove your mastery", nextChapter: '8b' }  // Updated reference
         ],
         type: 'minigame',
         minigameId: 'cat_dustbunny_power_route',
         effects: { powerLevel: 'master', isolation: true }
     },
 
-    chapter7c: {
-        id: 'chapter7c',
+    '7c': {
+        id: '7c',  // → chapter_7c_main.mp3 ✓
         title: 'Chapter 7C: Aggressive Approach to the Cave',
         text: `Whiskers' campaign of preemptive strikes had driven Dustzilla to desperation, and the dust monster had responded by making increasingly dangerous alliances. When Whiskers finally tracked his enemy to the abandoned house, he found that Dustzilla had allied with some truly unsavory characters—not just dust and grime, but also mold, rust, and even some malevolent spirits that fed on decay and neglect.
 
@@ -537,7 +536,7 @@ The basement entrance yawned before him like a mouth full of teeth, promising a 
         title: 'Chapter 7BGame: Power Path',
         text: 'Whiskers stands at the threshold of the dusty hallway. Swirling dust bunnies block the way, daring him to dodge and leap with feline finesse. This is no ordinary passage—this is a test of agility, a game of reflexes. Are you ready?',
         choices: [
-            { text: "Accept the challenge and prove your mastery", nextChapter: 'chapter8c' }
+            { text: "Accept the challenge and prove your mastery", nextChapter: '8c' }  // Updated reference
         ],
         type: 'minigame',
         minigameId: 'cat_dustbunny_speed_route',
@@ -545,8 +544,8 @@ The basement entrance yawned before him like a mouth full of teeth, promising a 
     },
 
     // --- CHAPTER 8 PATHS ---
-    chapter8a: {
-        id: 'chapter8a',
+    '8a': {
+        id: '8a',  // → chapter_8a_main.mp3 ✓
         title: 'Chapter 8A: Team Battle (From Alliance Path)',
         text: `The basement battle was epic, but not in the way Whiskers had expected. With his allies supporting him, the fight became less about individual heroics and more about coordinated teamwork.
 
@@ -564,12 +563,12 @@ Finally, surrounded by friends and with nowhere to run, Dustzilla collapsed in d
 
 **Continue to Chapter 9A**`,
         choices: [
-            { text: "Continue to Chapter 9A", nextChapter: 'chapter9a' }
+            { text: "Continue to Chapter 9A", nextChapter: '9a' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter8b: {
-        id: 'chapter8b',
+    '8b': {
+        id: '8b',  // → chapter_8b_main.mp3 ✓
         title: 'Chapter 8B: Solo Power Battle (From Power Development Path)',
         text: `The basement battle tested every technique Whiskers had mastered. Dustzilla had grown enormous and commanded an army of lesser dust creatures, but Whiskers' intensive training allowed him to hold his own through sheer magical might.
 
@@ -591,13 +590,13 @@ Whiskers found himself at a crossroads. His power was ready to end this definiti
 
 **Continue to Chapter 9B-1 or 9B-2**`,
         choices: [
-            { text: "Use overwhelming power to end the threat permanently", nextChapter: 'chapter9b1' },
-            { text: "Try to understand what Dustzilla really needs", nextChapter: 'chapter9b2' }
+            { text: "Use overwhelming power to end the threat permanently", nextChapter: '9b-1' },  // Updated reference
+            { text: "Try to understand what Dustzilla really needs", nextChapter: '9b-2' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter8c: {
-        id: 'chapter8c',
+    '8c': {
+        id: '8c',  // → chapter_8c_main.mp3 ✓
         title: 'Chapter 8C: Escalated War Battle (From Aggressive Path)',
         text: `The basement had become a hellscape of decay and malevolent energy. Dustzilla's desperate alliances had transformed the space into something far more dangerous than a simple dust problem. Mold creatures dripped from the ceiling, rust sprites corroded everything they touched, and decay spirits whispered discouragement and despair.
 
@@ -615,13 +614,14 @@ The final exchange was catastrophic. Whiskers unleashed every technique he had l
 
 **Continue to Chapter 9C**`,
         choices: [
-            { text: "Continue to Chapter 9C", nextChapter: 'chapter9c' }
+            { text: "Continue to Chapter 9C", nextChapter: '9c' }  // Updated reference
         ],
         type: 'story'
     },
+
     // --- CHAPTER 9 PATHS ---
-    chapter9a: {
-        id: 'chapter9a',
+    '9a': {
+        id: '9a',  // → chapter_9a_main.mp3 ✓
         title: 'Chapter 9A: Community Understanding (From Team Battle)',
         text: `In the aftermath of the coordinated battle, something beautiful happened. With Dustzilla defeated but not destroyed, the coalition of animals found themselves in a unique position to really understand what had happened.
 
@@ -643,12 +643,12 @@ Dusty's eyes (no longer glowing red, but a gentle brown) lit up with hope. "You 
 
 **Continue to Chapter 10A**`,
         choices: [
-            { text: "Continue to Chapter 10A", nextChapter: 'chapter10a' }
+            { text: "Continue to Chapter 10A", nextChapter: '10a' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter9b1: {
-        id: 'chapter9b1',
+    '9b-1': {
+        id: '9b-1',  // → chapter_9b-1_main.mp3 ✓
         title: 'Chapter 9B-1: Power Victory (Solo victory through force)',
         text: `Whiskers made his choice. His overwhelming bubble attack cleansed the entire basement in a spectacular explosion of purifying light. When the energy cleared, Dustzilla was gone—not just defeated, but completely dissolved.
 
@@ -670,12 +670,12 @@ Whiskers looked around the sterile basement. It was clean, but it was also empty
 
 **Continue to Chapter 10B-1**`,
         choices: [
-            { text: "Continue to Chapter 10B-1", nextChapter: 'chapter10b1' }
+            { text: "Continue to Chapter 10B-1", nextChapter: '10b-1' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter9b2: {
-        id: 'chapter9b2',
+    '9b-2': {
+        id: '9b-2',  // → chapter_9b-2_main.mp3 ✓
         title: 'Chapter 9B-2: Power with Understanding (Solo victory with compassion)',
         text: `Whiskers lowered his charge, dissipating the massive explosive bubble. "You're right," he said quietly. "Power can destroy problems, but it can't create solutions."
 
@@ -697,12 +697,12 @@ They talked for a long time, these two beings who had been enemies just moments 
 
 **Continue to Chapter 10B-2**`,
         choices: [
-            { text: "Continue to Chapter 10B-2", nextChapter: 'chapter10b2' }
+            { text: "Continue to Chapter 10B-2", nextChapter: '10b-2' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter9c: {
-        id: 'chapter9c',
+    '9c': {
+        id: '9c',  // → chapter_9c_main.mp3 ✓
         title: 'Chapter 9C: Pyrrhic Victory (From Escalated War)',
         text: `The final battle ended with Whiskers standing victorious, but at a terrible cost. The basement was a devastated wasteland, structurally damaged and infused with residual magical energy that would take years to dissipate. Dustzilla and its allies were destroyed, but so was much of the house's foundation.
 
@@ -722,13 +722,14 @@ The other animals of the neighborhood maintained their distance from Whiskers no
 
 **Continue to Chapter 10C**`,
         choices: [
-            { text: "Continue to Chapter 10C", nextChapter: 'chapter10c' }
+            { text: "Continue to Chapter 10C", nextChapter: '10c' }  // Updated reference
         ],
         type: 'story'
     },
+
     // --- CHAPTER 10 PATHS ---
-    chapter10a: {
-        id: 'chapter10a',
+    '10a': {
+        id: '10a',  // → chapter_10a_main.mp3 ✓
         title: 'Chapter 10A: Community Builder Path',
         text: `Returning to normal life was easier than Whiskers had expected because he wasn't returning alone. The coalition of animals that had formed during the crisis decided to maintain their alliance as a neighborhood watch organization.
 
@@ -742,12 +743,12 @@ The neighborhood had become a genuine community, with every resident (human and 
 
 **Continue to Chapter 12A**`,
         choices: [
-            { text: "Continue to Chapter 12A", nextChapter: 'chapter12a' }
+            { text: "Continue to Chapter 12A", nextChapter: '12a' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter10b1: {
-        id: 'chapter10b1',
+    '10b-1': {
+        id: '10b-1',  // → chapter_10b-1_main.mp3 ✓
         title: 'Chapter 10B-1: Solitary Guardian Path',
         text: `Mrs. Henderson returned to find her house immaculate and Whiskers sitting quietly by the window. She never learned about his adventure, but she couldn't help noticing that her cat seemed somehow different—more serious, more watchful.
 
@@ -761,12 +762,12 @@ He was the perfect protector, but he sometimes wondered if perfection was worth 
 
 **Continue to Chapter 12B-1**`,
         choices: [
-            { text: "Continue to Chapter 12B-1", nextChapter: 'chapter12b1' }
+            { text: "Continue to Chapter 12B-1", nextChapter: '12b-1' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter10b2: {
-        id: 'chapter10b2',
+    '10b-2': {
+        id: '10b-2',  // → chapter_10b-2_main.mp3 ✓
         title: 'Chapter 10B-2: Balanced Hero Path',
         text: `The partnership between Whiskers and Dusty became the foundation for a new approach to neighborhood protection. Instead of waiting for problems to become crises, they worked together to address issues early and with understanding.
 
@@ -780,12 +781,12 @@ Other animals in the neighborhood began to approach them with their own problems
 
 **Continue to Chapter 12B-2**`,
         choices: [
-            { text: "Continue to Chapter 12B-2", nextChapter: 'chapter12b2' }
+            { text: "Continue to Chapter 12B-2", nextChapter: '12b-2' }  // Updated reference
         ],
         type: 'story'
     },
-    chapter10c: {
-        id: 'chapter10c',
+    '10c': {
+        id: '10c',  // → chapter_10c_main.mp3 ✓
         title: 'Chapter 10C: Redemption Path',
         text: `The aftermath of the destructive battle left Whiskers grappling with the consequences of his choices. The neighborhood was safe from dust monsters, but it bore the scars of his aggressive approach. Gardens remained barren in spots where his purifying bubbles had been too intense, and some houses still showed damage from the magical battle.
 
@@ -801,13 +802,14 @@ It was harder than the original battle had been. Fixing relationships required p
 
 **Continue to Chapter 12C**`,
         choices: [
-            { text: "Continue to Chapter 12C", nextChapter: 'chapter12c' }
+            { text: "Continue to Chapter 12C", nextChapter: '12c' }  // Updated reference
         ],
         type: 'story'
     },
+
     // --- CHAPTER 12 ENDINGS ---
-    chapter12a: {
-        id: 'chapter12a',
+    '12a': {
+        id: '12a',  // → chapter_12a_main.mp3 ✓
         title: 'Ending A: The Community Builder',
         text: `Five years later, Maplewood had become famous throughout the region as the most harmonious neighborhood in the state. Visitors often commented on how clean and well-maintained everything was, but more importantly, how happy and connected all the residents seemed.
 
@@ -826,8 +828,8 @@ The true magic, he had learned, wasn't in the bubbles themselves—it was in bri
         type: 'story',
         endingType: 'community'
     },
-    chapter12b1: {
-        id: 'chapter12b1',
+    '12b-1': {
+        id: '12b-1',  // → chapter_12b-1_main.mp3 ✓
         title: 'Ending B-1: The Solitary Protector',
         text: `Ten years had passed since the Battle of the Basement, and Whiskers had become a legend among the animals of Maplewood and beyond. Stories of the Bubble Guardian spread throughout the region, told in hushed whispers among cats, shared in excited chirps among birds, and recounted with respect in pack meetings among dogs.
 
@@ -848,8 +850,8 @@ It was enough. It had to be enough.`,
         type: 'story',
         endingType: 'solitary'
     },
-    chapter12b2: {
-        id: 'chapter12b2',
+    '12b-2': {
+        id: '12b-2',  // → chapter_12b-2_main.mp3 ✓
         title: 'Ending B-2: The Wise Guardian',
         text: `The years that followed were marked by a gentle but steady improvement in the quality of life throughout Maplewood. Whiskers and Dusty's partnership had evolved into something beautiful—a perfect balance of prevention and protection, understanding and action.
 
@@ -870,8 +872,8 @@ Whiskers nodded, watching as a group of young animals played together in the par
         type: 'story',
         endingType: 'wise'
     },
-    chapter12c: {
-        id: 'chapter12c',
+    '12c': {
+        id: '12c',  // → chapter_12c_main.mp3 ✓
         title: 'Ending C: The Redeemed Warrior',
         text: `The road to redemption had been long and difficult, but Whiskers had traveled it with determination and humility. It took three years to fully repair the damage caused by his overzealous approach to fighting Dustzilla, and another two years to rebuild the trust he had lost in the community.
 
@@ -919,11 +921,9 @@ Maplewood was safe, but more importantly, it was a place where mistakes could be
     }
 };
 
-
-
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = STORY_DATA;
 } else {
     window.STORY_DATA = STORY_DATA;
-} 
+}

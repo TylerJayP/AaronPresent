@@ -1,4 +1,4 @@
-// Audio Manager for Whiskers Presenter App
+// Audio Manager for Whiskers Presenter App - UPDATED to fix audio overlap
 class AudioManager {
     constructor(app) {
         this.app = app;
@@ -37,11 +37,11 @@ class AudioManager {
         }
     }
 
-    // Main method to play chapter audio
+    // Main method to play chapter audio - UPDATED to stop current audio first
     async playChapterAudio(chapterId, section = 'main') {
         try {
-            // Stop any currently playing audio
-            this.stopCurrentAudio();
+            // ✅ FIXED: Stop any currently playing audio first
+            this.stopAllAudio();
 
             const filename = `chapter_${chapterId}_${section}.mp3`;
             const filepath = `./audio/${filename}`;
@@ -63,12 +63,17 @@ class AudioManager {
         }
     }
 
+    // UPDATED to properly handle currentAudio tracking
     async loadAndPlayAudio(filepath, filename) {
         try {
             // Check cache first
             if (this.audioCache.has(filepath)) {
                 console.log(`🔊 Using cached audio: ${filename}`);
-                await this.playAudioElement(this.audioCache.get(filepath), filename);
+                const audio = this.audioCache.get(filepath);
+                // Reset cached audio before playing
+                audio.pause();
+                audio.currentTime = 0;
+                await this.playAudioElement(audio, filename);
                 return;
             }
 
@@ -94,6 +99,41 @@ class AudioManager {
             // Fall back to placeholder
             this.simulateAudioPlayback(filename);
         }
+    }
+
+    // NEW method to properly handle audio element playing
+    async playAudioElement(audio, filename) {
+        return new Promise((resolve, reject) => {
+            // Set this as the current audio BEFORE playing
+            this.currentAudio = audio;
+            this.currentFile = filename;
+
+            const playHandler = () => {
+                audio.removeEventListener('canplay', playHandler);
+                audio.removeEventListener('error', errorHandler);
+                resolve();
+            };
+
+            const errorHandler = (error) => {
+                audio.removeEventListener('canplay', playHandler);
+                audio.removeEventListener('error', errorHandler);
+                reject(error);
+            };
+
+            audio.addEventListener('canplay', playHandler);
+            audio.addEventListener('error', errorHandler);
+
+            // Start playing
+            audio.play().catch(error => {
+                if (error.name === 'NotAllowedError') {
+                    console.log(`🔊 Autoplay blocked for ${filename} - user interaction required`);
+                    // Still resolve as this is expected behavior
+                    resolve();
+                } else {
+                    errorHandler(error);
+                }
+            });
+        });
     }
 
     setupAudioEventListeners(audio, filename) {
@@ -125,48 +165,19 @@ class AudioManager {
             console.log(`🔊 Playback finished: ${filename}`);
             this.isPlaying = false;
             this.currentFile = null;
-            this.currentAudio = null;
             this.notifyAudioStatus('finished', filename);
             this.app.modules.ui.updateAudioIndicator(false);
             this.addToHistory(filename);
         });
 
-        audio.addEventListener('error', (event) => {
-            console.error(`🔊 Audio error for ${filename}:`, event.target.error);
-            this.handleAudioError(event.target.error, filename);
-        });
-
-        audio.addEventListener('timeupdate', () => {
-            // Optional: could be used for progress tracking
-            if (this.onProgressUpdate) {
-                this.onProgressUpdate(audio.currentTime, audio.duration);
-            }
+        audio.addEventListener('error', (error) => {
+            console.error(`🔊 Audio error for ${filename}:`, error);
+            this.isPlaying = false;
+            this.notifyAudioStatus('error', filename);
+            this.app.modules.ui.updateAudioIndicator(false);
         });
     }
 
-    async playAudioElement(audio, filename) {
-        try {
-            this.currentAudio = audio;
-
-            // Handle browser autoplay policy
-            const playPromise = audio.play();
-
-            if (playPromise !== undefined) {
-                await playPromise;
-            }
-
-        } catch (error) {
-            if (error.name === 'NotAllowedError') {
-                console.warn(`🔊 Autoplay blocked for ${filename} - user interaction required`);
-                this.notifyAudioStatus('blocked', filename);
-                this.app.modules.ui.showAutoplayWarning();
-            } else {
-                throw error;
-            }
-        }
-    }
-
-    // Placeholder mode for when audio files aren't available
     simulateAudioPlayback(filename) {
         console.log(`🔊 [PLACEHOLDER] Playing: ${filename}`);
 
@@ -188,14 +199,62 @@ class AudioManager {
         }, duration);
     }
 
+    // ✅ FIXED: Completely stop current audio to prevent overlap
     stopCurrentAudio() {
         if (this.currentAudio) {
             console.log('🔊 Stopping current audio');
+            
+            // Stop the audio immediately
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
+            
+            // Clear the source to completely stop it
+            this.currentAudio.src = '';
+            
+            // Reset state variables
             this.isPlaying = false;
-            this.app.modules.ui.updateAudioIndicator(false);
+            this.currentFile = null;
+            
+            // Update UI
+            if (this.app.modules.ui) {
+                this.app.modules.ui.updateAudioIndicator(false);
+            }
+            
+            // Send status notification
+            this.notifyAudioStatus('stopped', this.currentFile);
+            
+            // Clear the reference
+            this.currentAudio = null;
+            
+            console.log('🔊 Audio stopped successfully');
+        } else {
+            console.log('🔊 No audio currently playing to stop');
         }
+    }
+
+    // ✅ NEW: Stop ALL audio including cached elements
+    stopAllAudio() {
+        console.log('🔊 Stopping all audio');
+        
+        // Stop current audio
+        this.stopCurrentAudio();
+        
+        // Stop all cached audio elements (but keep their sources for reuse)
+        for (const [filepath, audio] of this.audioCache) {
+            if (audio && !audio.paused) {
+                audio.pause();
+                audio.currentTime = 0;
+                // ✅ FIXED: Don't clear src for cached audio - we want to reuse them
+                // audio.src = ''; // ← Remove this line
+            }
+        }
+        
+        // Reset all state
+        this.isPlaying = false;
+        this.currentFile = null;
+        this.currentAudio = null;
+        
+        console.log('🔊 All audio stopped');
     }
 
     pauseCurrentAudio() {
@@ -261,7 +320,8 @@ class AudioManager {
         console.error('🔊 Audio error:', error);
 
         // Use placeholder as fallback
-        const filename = typeof chapterId === 'string' ? chapterId : `chapter_${chapterId}_${section || 'main'}.mp3`;
+        const filename = typeof chapterId === 'string' ? 
+            chapterId : `chapter_${chapterId}_${section || 'main'}.mp3`;
         this.simulateAudioPlayback(filename);
 
         // Notify about the error
@@ -319,7 +379,7 @@ class AudioManager {
         console.log('🔊 Clearing audio cache');
 
         // Stop current audio
-        this.stopCurrentAudio();
+        this.stopAllAudio();
 
         // Clear cache
         this.audioCache.clear();
@@ -365,4 +425,4 @@ class AudioManager {
             audioEnabled: CONFIG.AUDIO_ENABLED
         };
     }
-} 
+}

@@ -29,7 +29,7 @@ const CONFIG = {
     },
 
     // Audio Settings
-    AUDIO_ENABLED: false,  // Set to true to enable audio
+    AUDIO_ENABLED: true,  // Set to true to enable audio
     AUDIO: {
         MASTER_VOLUME: 0.7,
         MUSIC_VOLUME: 0.5,

@@ -46,57 +46,54 @@ class StoryEngine {
         console.log('📖 Story data validation passed');
     }
 
-    async loadChapter(chapterId) {
-        try {
-            console.log(`📖 Loading chapter: ${chapterId}`);
-
-            // Get chapter data
-            const chapter = STORY_DATA[chapterId];
-            if (!chapter) {
-                throw new Error(`Chapter not found: ${chapterId}`);
-            }
-
-            // Set current chapter
-            this.currentChapter = chapter;
-            this.currentChoices = chapter.choices || [];
-
-            // Chapter loaded successfully
-
-            // Update app state
-            this.app.gameState.currentChapter = chapterId;
-            this.app.gameState.storyProgress.chaptersCompleted.push({
-                id: chapterId,
-                timestamp: new Date().toISOString()
-            });
-
-            // Apply any chapter effects
-            if (chapter.effects) {
-                this.app.applyEffects(chapter.effects);
-            }
-
-            // Display chapter through UI
-            this.app.modules.ui.displayChapter(chapter);
-
-            // Handle special chapter types
-            await this.handleSpecialChapter(chapter);
-
-            // Send chapter change notification
-            this.app.sendMQTTMessage({
-                type: 'chapter_changed',
-                timestamp: new Date().toISOString(),
-                currentChapter: chapterId,
-                chapterTitle: chapter.title,
-                chapterType: chapter.type || 'story',
-                hasChoices: (chapter.choices && chapter.choices.length > 0),
-                playerState: this.app.gameState.playerStats
-            });
-
-            console.log(`✅ Chapter loaded: ${chapterId}`);
-        } catch (error) {
-            console.error(`❌ Failed to load chapter: ${chapterId}`, error);
-            this.app.handleError('chapter_load', error);
+async loadChapter(chapterId) {
+    try {
+        // ✅ IMPROVED: Stop ALL audio and wait a moment for it to fully stop
+        if (CONFIG.AUDIO_ENABLED && this.app.modules.audio) {
+            this.app.modules.audio.stopAllAudio();
+            // Small delay to ensure audio fully stops before continuing
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
+
+        console.log(`📖 Loading chapter: ${chapterId}`);
+
+        // Get chapter data
+        const chapter = this.getChapterById(chapterId);
+        if (!chapter) {
+            throw new Error(`Chapter not found: ${chapterId}`);
+        }
+
+        // Store current chapter
+        this.currentChapter = chapter;
+        this.currentChoices = chapter.choices || [];
+
+        // Update game state
+        this.app.gameState.currentChapter = chapterId;
+        this.app.gameState.gameStatus.currentChoices = this.currentChoices;
+
+        // Render through UI
+        this.app.modules.ui.displayChapter(chapter);
+
+        // Handle special chapter types
+        await this.handleSpecialChapter(chapter);
+
+        // Send chapter change notification
+        this.app.sendMQTTMessage({
+            type: 'chapter_changed',
+            timestamp: new Date().toISOString(),
+            currentChapter: chapterId,
+            chapterTitle: chapter.title,
+            chapterType: chapter.type || 'story',
+            hasChoices: (chapter.choices && chapter.choices.length > 0),
+            playerState: this.app.gameState.playerStats
+        });
+
+        console.log(`✅ Chapter loaded: ${chapterId}`);
+    } catch (error) {
+        console.error(`❌ Failed to load chapter: ${chapterId}`, error);
+        this.app.handleError('chapter_load', error);
     }
+}
 
     async handleSpecialChapter(chapter) {
         switch (chapter.type) {
