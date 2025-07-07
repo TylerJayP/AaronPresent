@@ -3,7 +3,7 @@
 // FIXED: Chapter IDs now match audio file names exactly
 
 const STORY_DATA = {
-    start: {
+    'start': {
         id: 'start',  // → chapter_start_main.mp3 ✓
         title: 'Chapter 1: The Ordinary World',
         text: `In the cozy suburb of Maplewood, there lived an ordinary orange tabby cat named Whiskers. His days were pleasantly predictable: morning naps in sunbeams, afternoon bird-watching from windowsills, and evening belly rubs from his human, Mrs. Henderson. Whiskers was content with his simple life, though he sometimes gazed longingly at the birds outside, wondering what adventures lay beyond his comfortable home.
@@ -271,7 +271,7 @@ Dustzilla considered this, but then shook its massive form. "No! It's too late f
         effects: { hasBubblePowers: true, courage: 'Diplomatic' }
     },
 
-    crossingThreshold: {
+    '5': {
         id: '5',  // → chapter_5_main.mp3 ✓
         title: 'Chapter 5: Crossing the Threshold',
         text: `With his new bubble powers flowing through him, Whiskers felt a confidence he'd never experienced before. His first test came immediately as Dustzilla, regardless of its initial reaction, now saw him as a real threat.

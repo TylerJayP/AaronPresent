@@ -1,4 +1,4 @@
-// Audio Manager for Whiskers Presenter App - UPDATED to fix audio overlap
+// Audio Manager for Whiskers Presenter App - FINAL FIX with audio element tracking
 class AudioManager {
     constructor(app) {
         this.app = app;
@@ -11,6 +11,9 @@ class AudioManager {
         this.playbackHistory = [];
         this.volume = 0.7;
         this.muted = false;
+        this.isStoppingAll = false; // Prevent overlapping stop operations
+        this.placeholderTimeouts = new Set(); // Track placeholder timeouts
+        this.allAudioElements = new Set(); // ✅ Track ALL audio elements we create
     }
 
     async initialize() {
@@ -37,11 +40,17 @@ class AudioManager {
         }
     }
 
-    // Main method to play chapter audio - UPDATED to stop current audio first
+    // Main method to play chapter audio - waits for stopAllAudio to complete
     async playChapterAudio(chapterId, section = 'main') {
         try {
-            // ✅ FIXED: Stop any currently playing audio first
-            this.stopAllAudio();
+            // ✅ CRITICAL FIX: Wait for stopAllAudio to fully complete
+            await this.stopAllAudio();
+            
+            // Additional safety check - don't start if we're still stopping
+            if (this.isStoppingAll) {
+                console.log('🔊 Still stopping audio, skipping new playback');
+                return;
+            }
 
             const filename = `chapter_${chapterId}_${section}.mp3`;
             const filepath = `./audio/${filename}`;
@@ -63,24 +72,41 @@ class AudioManager {
         }
     }
 
-    // UPDATED to properly handle currentAudio tracking
+    // ✅ UPDATED: Track audio elements when we create them
     async loadAndPlayAudio(filepath, filename) {
         try {
-            // Check cache first
+            // Check cache first and validate the cached audio
             if (this.audioCache.has(filepath)) {
-                console.log(`🔊 Using cached audio: ${filename}`);
+                console.log(`🔊 Checking cached audio: ${filename}`);
                 const audio = this.audioCache.get(filepath);
-                // Reset cached audio before playing
-                audio.pause();
-                audio.currentTime = 0;
-                await this.playAudioElement(audio, filename);
-                return;
+                
+                if (audio.error || !audio.src || audio.networkState === audio.NETWORK_NO_SOURCE) {
+                    console.log(`🔊 Cached audio is corrupted, recreating: ${filename}`);
+                    this.audioCache.delete(filepath);
+                    this.allAudioElements.delete(audio); // ✅ Remove from tracking
+                } else {
+                    console.log(`🔊 Using valid cached audio: ${filename}`);
+                    if (audio.src !== filepath && !audio.src.endsWith(filepath)) {
+                        console.log(`🔊 Restoring audio src: ${filename}`);
+                        audio.src = filepath;
+                    }
+                    
+                    audio.pause();
+                    audio.currentTime = 0;
+                    this.setupAudioEventListeners(audio, filename);
+                    await this.playAudioElement(audio, filename);
+                    return;
+                }
             }
 
             // Create new audio element
+            console.log(`🔊 Creating new audio element: ${filename}`);
             const audio = new Audio();
             audio.volume = this.muted ? 0 : this.volume;
             audio.preload = 'auto';
+
+            // ✅ NEW: Track this audio element
+            this.allAudioElements.add(audio);
 
             // Set up event listeners
             this.setupAudioEventListeners(audio, filename);
@@ -96,12 +122,12 @@ class AudioManager {
 
         } catch (error) {
             console.error(`🔊 Failed to load audio file: ${filepath}`, error);
-            // Fall back to placeholder
+            this.audioCache.delete(filepath);
             this.simulateAudioPlayback(filename);
         }
     }
 
-    // NEW method to properly handle audio element playing
+    // Method to properly handle audio element playing
     async playAudioElement(audio, filename) {
         return new Promise((resolve, reject) => {
             // Set this as the current audio BEFORE playing
@@ -178,6 +204,7 @@ class AudioManager {
         });
     }
 
+    // Enhanced: Track placeholder timeouts so we can clear them
     simulateAudioPlayback(filename) {
         console.log(`🔊 [PLACEHOLDER] Playing: ${filename}`);
 
@@ -189,72 +216,182 @@ class AudioManager {
         // Simulate realistic narration duration (15-45 seconds)
         const duration = 15000 + Math.random() * 30000;
 
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             console.log(`🔊 [PLACEHOLDER] Finished: ${filename}`);
             this.isPlaying = false;
             this.currentFile = null;
             this.notifyAudioStatus('finished', filename);
             this.app.modules.ui.updateAudioIndicator(false);
             this.addToHistory(filename);
+            
+            // Remove this timeout from our tracking
+            this.placeholderTimeouts.delete(timeoutId);
         }, duration);
+        
+        // Track this timeout so we can clear it if needed
+        this.placeholderTimeouts.add(timeoutId);
     }
 
-    // ✅ FIXED: Completely stop current audio to prevent overlap
+    // Don't corrupt cached audio elements when stopping
     stopCurrentAudio() {
         if (this.currentAudio) {
-            console.log('🔊 Stopping current audio');
+            console.log('🔊 Stopping current audio immediately');
             
-            // Stop the audio immediately
+            // Stop the audio immediately but DON'T clear the src for cached elements
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
             
-            // Clear the source to completely stop it
-            this.currentAudio.src = '';
+            // Remove all event listeners to prevent callbacks
+            this.currentAudio.onended = null;
+            this.currentAudio.onpause = null;
+            this.currentAudio.onplay = null;
+            this.currentAudio.onerror = null;
+            
+            // Don't clear src if this audio is in cache - just stop it
+            const audioSrc = this.currentAudio.src;
+            const isInCache = Array.from(this.audioCache.values()).includes(this.currentAudio);
+            
+            if (!isInCache) {
+                // Only clear src for non-cached audio elements
+                this.currentAudio.src = '';
+                this.currentAudio.load();
+            }
+            // For cached elements, just leave them paused with their src intact
             
             // Reset state variables
             this.isPlaying = false;
             this.currentFile = null;
             
-            // Update UI
+            // Update UI immediately
             if (this.app.modules.ui) {
                 this.app.modules.ui.updateAudioIndicator(false);
             }
             
-            // Send status notification
-            this.notifyAudioStatus('stopped', this.currentFile);
+            // Send status notification if needed
+            if (audioSrc) {
+                this.notifyAudioStatus('stopped', this.currentFile);
+            }
             
             // Clear the reference
             this.currentAudio = null;
             
-            console.log('🔊 Audio stopped successfully');
-        } else {
-            console.log('🔊 No audio currently playing to stop');
+            console.log('🔊 Current audio stopped successfully');
         }
     }
 
-    // ✅ NEW: Stop ALL audio including cached elements
+    // ✅ FIXED: Stop ALL tracked audio elements (not DOM elements)
     stopAllAudio() {
-        console.log('🔊 Stopping all audio');
+        return new Promise((resolve) => {
+            if (this.isStoppingAll) {
+                resolve();
+                return;
+            }
+            
+            this.isStoppingAll = true;
+            console.log('🔊 AGGRESSIVELY stopping ALL audio - BLOCKING');
+            
+            // 1. Stop our tracked current audio
+            this.stopCurrentAudio();
+            
+            // 2. Stop all cached audio elements
+            for (const [filepath, audio] of this.audioCache) {
+                if (audio && !audio.paused) {
+                    console.log(`🔊 Stopping cached audio: ${filepath}`);
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            }
+            
+            // 3. ✅ FIXED: Stop ALL tracked audio elements (not DOM query)
+            console.log(`🔊 Found ${this.allAudioElements.size} tracked audio elements`);
+            
+            this.allAudioElements.forEach((audio) => {
+                if (audio && !audio.paused) {
+                    console.log(`🔊 Stopping tracked audio element:`, audio.src);
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            });
+            
+            // 4. Clear any placeholder audio timeouts
+            if (this.placeholderTimeouts && this.placeholderTimeouts.size > 0) {
+                this.placeholderTimeouts.forEach(timeoutId => {
+                    clearTimeout(timeoutId);
+                    console.log('🔊 Cleared placeholder timeout');
+                });
+                this.placeholderTimeouts.clear();
+            }
+            
+            // 5. Reset all state immediately
+            this.isPlaying = false;
+            this.currentFile = null;
+            this.currentAudio = null;
+            
+            // Update UI immediately
+            if (this.app.modules.ui) {
+                this.app.modules.ui.updateAudioIndicator(false);
+            }
+            
+            // Wait longer to ensure audio is fully stopped
+            setTimeout(() => {
+                this.isStoppingAll = false;
+                console.log('🔊 ALL audio aggressively stopped - UNBLOCKED');
+                resolve();
+            }, 300);
+        });
+    }
+
+    // Method to check if audio is properly stopped
+    isAudioFullyStopped() {
+        if (this.currentAudio && !this.currentAudio.paused) {
+            return false;
+        }
         
-        // Stop current audio
-        this.stopCurrentAudio();
-        
-        // Stop all cached audio elements (but keep their sources for reuse)
+        // Check all cached audio
         for (const [filepath, audio] of this.audioCache) {
             if (audio && !audio.paused) {
-                audio.pause();
-                audio.currentTime = 0;
-                // ✅ FIXED: Don't clear src for cached audio - we want to reuse them
-                // audio.src = ''; // ← Remove this line
+                return false;
             }
         }
         
-        // Reset all state
-        this.isPlaying = false;
-        this.currentFile = null;
-        this.currentAudio = null;
+        // Check all tracked audio elements
+        for (const audio of this.allAudioElements) {
+            if (audio && !audio.paused) {
+                return false;
+            }
+        }
         
-        console.log('🔊 All audio stopped');
+        return true;
+    }
+
+    // ✅ UPDATED: Better debug method using tracked elements
+    findAllPlayingAudio() {
+        const playingAudio = [];
+        
+        console.log(`🔍 Checking ${this.allAudioElements.size} tracked audio elements...`);
+        
+        let index = 0;
+        this.allAudioElements.forEach((audio) => {
+            const isPlaying = !audio.paused;
+            const isInCache = Array.from(this.audioCache.values()).includes(audio);
+            const isCurrent = audio === this.currentAudio;
+            
+            console.log(`Audio ${index}: playing=${isPlaying}, cached=${isInCache}, current=${isCurrent}, src=${audio.src}`);
+            
+            if (isPlaying) {
+                playingAudio.push({
+                    element: audio,
+                    index,
+                    src: audio.src,
+                    isInCache,
+                    isCurrent
+                });
+            }
+            index++;
+        });
+        
+        console.log(`🔍 Found ${playingAudio.length} playing audio elements:`, playingAudio);
+        return playingAudio;
     }
 
     pauseCurrentAudio() {
@@ -343,7 +480,7 @@ class AudioManager {
         }
     }
 
-    // Development/Testing Methods
+    // ✅ UPDATED: Track preloaded audio too
     preloadChapterAudio(chapterId, section = 'main') {
         if (!CONFIG.AUDIO_ENABLED) {
             console.log(`🔊 [PLACEHOLDER] Preloading: chapter_${chapterId}_${section}.mp3`);
@@ -359,6 +496,9 @@ class AudioManager {
             const audio = new Audio();
             audio.preload = 'auto';
             audio.src = filepath;
+
+            // ✅ NEW: Track preloaded audio too
+            this.allAudioElements.add(audio);
 
             this.setupAudioEventListeners(audio, filename);
             this.audioCache.set(filepath, audio);
@@ -383,6 +523,7 @@ class AudioManager {
 
         // Clear cache
         this.audioCache.clear();
+        this.allAudioElements.clear(); // ✅ Clear tracking too
         this.currentAudio = null;
         this.currentFile = null;
         this.isPlaying = false;
@@ -421,6 +562,7 @@ class AudioManager {
             volume: this.volume,
             muted: this.muted,
             cacheSize: this.audioCache.size,
+            trackedAudioElements: this.allAudioElements.size, // ✅ NEW stat
             historyCount: this.playbackHistory.length,
             audioEnabled: CONFIG.AUDIO_ENABLED
         };

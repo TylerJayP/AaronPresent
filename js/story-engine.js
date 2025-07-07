@@ -1,4 +1,4 @@
-// Story Engine for Whiskers Presenter App - Updated with minigame integration
+// Story Engine for Whiskers Presenter App - FIXED to prevent audio overlap
 class StoryEngine {
     constructor(app) {
         this.app = app;
@@ -46,54 +46,72 @@ class StoryEngine {
         console.log('📖 Story data validation passed');
     }
 
-async loadChapter(chapterId) {
-    try {
-        // ✅ IMPROVED: Stop ALL audio and wait a moment for it to fully stop
-        if (CONFIG.AUDIO_ENABLED && this.app.modules.audio) {
-            this.app.modules.audio.stopAllAudio();
-            // Small delay to ensure audio fully stops before continuing
+    // ✅ MAIN FIX: Enhanced loadChapter with proper audio stopping
+    async loadChapter(chapterId) {
+        try {
+            console.log(`📖 Loading chapter: ${chapterId}`);
+
+            // ✅ CRITICAL FIX: Stop ALL audio and wait for complete stop before proceeding
+            if (CONFIG.AUDIO_ENABLED && this.app.modules.audio) {
+                console.log('📖 Stopping previous audio...');
+                await this.app.modules.audio.stopAllAudio();
+                
+                // Additional verification that audio is stopped
+                let attempts = 0;
+                while (!this.app.modules.audio.isAudioFullyStopped() && attempts < 10) {
+                    console.log('📖 Waiting for audio to fully stop...');
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    attempts++;
+                }
+                
+                if (attempts >= 10) {
+                    console.warn('📖 Audio may not be fully stopped, proceeding anyway');
+                } else {
+                    console.log('📖 Audio fully stopped, proceeding with chapter load');
+                }
+            }
+
+            // Get chapter data
+            const chapter = this.getChapterById(chapterId);
+            if (!chapter) {
+                throw new Error(`Chapter not found: ${chapterId}`);
+            }
+
+            // Store current chapter
+            this.currentChapter = chapter;
+            this.currentChoices = chapter.choices || [];
+
+            // Update game state
+            this.app.gameState.currentChapter = chapterId;
+            this.app.gameState.gameStatus.currentChoices = this.currentChoices;
+
+            // Render through UI
+            this.app.modules.ui.displayChapter(chapter);
+
+            // ✅ IMPORTANT: Add a small delay before starting new audio
+            // This ensures the UI is rendered and previous audio is completely cleared
             await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Handle special chapter types (this will trigger new audio)
+            await this.handleSpecialChapter(chapter);
+
+            // Send chapter change notification
+            this.app.sendMQTTMessage({
+                type: 'chapter_changed',
+                timestamp: new Date().toISOString(),
+                currentChapter: chapterId,
+                chapterTitle: chapter.title,
+                chapterType: chapter.type || 'story',
+                hasChoices: (chapter.choices && chapter.choices.length > 0),
+                playerState: this.app.gameState.playerStats
+            });
+
+            console.log(`✅ Chapter loaded: ${chapterId}`);
+        } catch (error) {
+            console.error(`❌ Failed to load chapter: ${chapterId}`, error);
+            this.app.handleError('chapter_load', error);
         }
-
-        console.log(`📖 Loading chapter: ${chapterId}`);
-
-        // Get chapter data
-        const chapter = this.getChapterById(chapterId);
-        if (!chapter) {
-            throw new Error(`Chapter not found: ${chapterId}`);
-        }
-
-        // Store current chapter
-        this.currentChapter = chapter;
-        this.currentChoices = chapter.choices || [];
-
-        // Update game state
-        this.app.gameState.currentChapter = chapterId;
-        this.app.gameState.gameStatus.currentChoices = this.currentChoices;
-
-        // Render through UI
-        this.app.modules.ui.displayChapter(chapter);
-
-        // Handle special chapter types
-        await this.handleSpecialChapter(chapter);
-
-        // Send chapter change notification
-        this.app.sendMQTTMessage({
-            type: 'chapter_changed',
-            timestamp: new Date().toISOString(),
-            currentChapter: chapterId,
-            chapterTitle: chapter.title,
-            chapterType: chapter.type || 'story',
-            hasChoices: (chapter.choices && chapter.choices.length > 0),
-            playerState: this.app.gameState.playerStats
-        });
-
-        console.log(`✅ Chapter loaded: ${chapterId}`);
-    } catch (error) {
-        console.error(`❌ Failed to load chapter: ${chapterId}`, error);
-        this.app.handleError('chapter_load', error);
     }
-}
 
     async handleSpecialChapter(chapter) {
         switch (chapter.type) {
@@ -115,10 +133,20 @@ async loadChapter(chapterId) {
         }
     }
 
+    // ✅ FIXED: Enhanced handleStoryChapter to be safer with audio
     async handleStoryChapter(chapter) {
-        // Trigger audio playback if enabled
+        // ✅ SAFETY CHECK: Make sure we're not still stopping audio
         if (CONFIG.AUDIO_ENABLED && this.app.modules.audio) {
-            await this.app.modules.audio.playChapterAudio(chapter.id);
+            // Double-check that previous audio is stopped
+            if (!this.app.modules.audio.isAudioFullyStopped()) {
+                console.log('📖 Waiting for audio to fully stop before playing new audio...');
+                await this.app.modules.audio.stopAllAudio();
+            }
+            
+            // Trigger audio playback with a small delay
+            setTimeout(async () => {
+                await this.app.modules.audio.playChapterAudio(chapter.id);
+            }, 50);
         }
 
         // Set appropriate input state based on choice type
@@ -419,4 +447,4 @@ async loadChapter(chapterId) {
             console.warn('📖 No choices available after minigame failure');
         }
     }
-} 
+}
